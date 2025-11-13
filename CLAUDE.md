@@ -81,3 +81,10 @@ export const useCounterStore = defineStore('counter', () => {
 - 使用 `vue-tsc` 而非 `tsc` 进行类型检查，以支持 `.vue` 文件
 - 新建组件时优先使用 `<script setup lang="ts">` 语法
 - 添加新路由时考虑是否需要代码分割（懒加载）
+
+## Active Technologies
+- TypeScript 5.9+ / Vue 3.5+ + Vue 3 (Composition API), Pinia 3.x (状态管理), Vue Router 4.x, Vite 7.x (001-annual-leave-system)
+- 本地 JSON 文件存储 (localStorage 作为备选) (001-annual-leave-system)
+
+## Recent Changes
+- 001-annual-leave-system: Added TypeScript 5.9+ / Vue 3.5+ + Vue 3 (Composition API), Pinia 3.x (状态管理), Vue Router 4.x, Vite 7.x
