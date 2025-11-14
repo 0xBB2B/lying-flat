@@ -85,6 +85,8 @@ export const useCounterStore = defineStore('counter', () => {
 ## Active Technologies
 - TypeScript 5.9+ / Vue 3.5+ + Vue 3 (Composition API), Pinia 3.x (状态管理), Vue Router 4.x, Vite 7.x (001-annual-leave-system)
 - 本地 JSON 文件存储 (localStorage 作为备选) (001-annual-leave-system)
+- TypeScript 5.9+ (严格模式) (001-annual-leave-system)
+- localStorage (主存储) + JSON文件导入导出 (备份/迁移) (001-annual-leave-system)
 
 ## Recent Changes
 - 001-annual-leave-system: Added TypeScript 5.9+ / Vue 3.5+ + Vue 3 (Composition API), Pinia 3.x (状态管理), Vue Router 4.x, Vite 7.x

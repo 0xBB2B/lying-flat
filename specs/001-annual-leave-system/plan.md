@@ -1,42 +1,60 @@
 # Implementation Plan: 员工年假统计系统
 
-**Branch**: `001-annual-leave-system` | **Date**: 2025-11-13 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-annual-leave-system` | **Date**: 2025-11-14 | **Spec**: [spec.md](spec.md)
 **Input**: Feature specification from `/specs/001-annual-leave-system/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-构建一个员工年假统计系统,自动根据员工入职日期计算并管理年假额度。系统使用 Vue 3 + TypeScript + Vite 构建单页应用,数据存储在本地 JSON 文件中。核心功能包括:员工管理、年假自动计算(按入职周年发放)、手动调整、休假记录、日历视图、以及年假有效期管理(2年)。
+构建一个公司内部员工年假统计系统,允许HR管理员管理员工信息、自动计算年假额度、记录年假使用、查看日历视图,并处理年假有效期和过期提醒。系统采用Vue 3 + TypeScript + Vite技术栈,使用TailwindCSS实现响应式UI,数据存储于localStorage,支持JSON导入导出。
 
 ## Technical Context
 
-**Language/Version**: TypeScript 5.9+ / Vue 3.5+
-**Primary Dependencies**: Vue 3 (Composition API), Pinia 3.x (状态管理), Vue Router 4.x, Vite 7.x
-**Storage**: 本地 JSON 文件存储 (localStorage 作为备选)
-**Testing**: Vitest (Vue 生态标准测试框架) + Vue Test Utils
-**Target Platform**: 现代浏览器 (支持 ES2020+)
-**Project Type**: Web (单页应用)
-**Performance Goals**: 日历视图 <2s 加载,支持 50+ 员工数据;操作响应 <200ms
-**Constraints**: 纯前端实现,无后端依赖;离线可用;数据持久化在客户端
-**Scale/Scope**: 小型团队使用 (50-100 员工),约 10-15 个 Vue 组件,5-8 个页面视图
+**Language/Version**: TypeScript 5.9+ (严格模式)
+**Framework**: Vue 3.5+ (Composition API with `<script setup>`)
+**Primary Dependencies**:
+- Vue 3.5+ (核心框架)
+- Pinia 3.x (状态管理)
+- Vue Router 4.x (路由)
+- TailwindCSS 3.x (样式)
+- **Shadcn-vue** (UI组件库 - 基于Radix Vue + TailwindCSS)
+- **自定义日历组件** (使用CSS Grid + date-fns)
+- **date-fns** (日期处理 - tree-shakable, TypeScript友好)
+
+**Build Tool**: Vite 7.x
+**Storage**: localStorage (主存储) + JSON文件导入导出 (备份/迁移)
+**Testing**: Vitest (单元测试) + Vue Test Utils (组件测试)
+**Target Platform**: 现代浏览器 (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+)
+**Project Type**: Web (单页应用 SPA)
+**Performance Goals**:
+- 页面加载时间 <2秒
+- 日历视图渲染 <2秒 (50名员工数据)
+- 操作响应时间 <200ms (添加员工、记录休假等)
+
+**Constraints**:
+- 响应式设计 (移动端 <768px, 桌面端 ≥768px)
+- 纯前端应用,无后端API
+- 数据持久化仅依赖浏览器localStorage
+- 单管理员使用,无并发控制
+
+**Scale/Scope**:
+- 支持 ~100名员工数据
+- ~10个主要页面/视图
+- localStorage存储限制 ~5-10MB (足够)
 
 ## Constitution Check
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-由于项目 constitution 为模板状态,采用 Vue 生态最佳实践进行检查:
+**Status**: ✅ PASS (无项目宪法定义,使用Vue 3最佳实践)
 
-| 检查项 | 状态 | 说明 |
-|--------|------|------|
-| **组件化设计** | ✅ PASS | 采用 Vue 3 Composition API,遵循单一职责原则 |
-| **类型安全** | ✅ PASS | TypeScript 严格模式,所有实体和 API 都有类型定义 |
-| **测试策略** | ✅ PASS | 使用 Vitest + Vue Test Utils,关键业务逻辑需单元测试 |
-| **状态管理** | ✅ PASS | Pinia stores 使用 setup 语法,状态与组件分离 |
-| **代码质量** | ✅ PASS | ESLint + Prettier 保证代码一致性 |
-| **性能考虑** | ✅ PASS | 路由懒加载,大列表虚拟滚动(如需要) |
-
-**结论**: 所有检查项通过,可以进入 Phase 0 研究阶段。
+本项目遵循以下原则:
+1. **Composition API优先**: 所有组件使用 `<script setup lang="ts">` 语法
+2. **类型安全**: 启用TypeScript严格模式,所有数据结构明确类型定义
+3. **响应式设计**: 移动优先策略,使用Tailwind响应式断点
+4. **单一职责**: 组件、Store、工具函数明确职责划分
+5. **可测试性**: 业务逻辑与UI分离,便于单元测试
 
 ## Project Structure
 
@@ -56,64 +74,68 @@ specs/[###-feature]/
 
 ```text
 src/
-├── models/               # TypeScript 类型定义和数据模型
-│   ├── Employee.ts      # 员工实体
-│   ├── LeaveEntitlement.ts  # 年假额度实体
-│   ├── LeaveUsage.ts    # 年假使用记录
-│   └── LeaveAdjustment.ts   # 年假调整记录
-├── stores/              # Pinia 状态管理
-│   ├── employeeStore.ts # 员工数据管理
-│   └── leaveStore.ts    # 年假数据管理
-├── services/            # 业务逻辑层
-│   ├── leaveCalculator.ts   # 年假计算引擎
-│   ├── leaveValidator.ts    # 年假验证逻辑
-│   ├── expiryManager.ts     # 年假有效期管理
-│   └── storageService.ts    # 本地存储服务 (JSON)
-├── components/          # Vue 可复用组件
-│   ├── EmployeeList.vue     # 员工列表
-│   ├── EmployeeForm.vue     # 员工表单
-│   ├── LeaveBalance.vue     # 年假余额显示
-│   ├── LeaveAdjustmentForm.vue  # 年假调整表单
-│   ├── LeaveUsageForm.vue   # 休假记录表单
-│   └── CalendarView.vue     # 日历视图
-├── views/               # 页面级组件
-│   ├── EmployeeListView.vue    # 员工列表页
-│   ├── EmployeeDetailView.vue  # 员工详情页
-│   ├── LeaveCalendarView.vue   # 年假日历页
-│   └── LeaveReportsView.vue    # 年假报表页
+├── main.ts                    # 应用入口
+├── App.vue                    # 根组件
 ├── router/
-│   └── index.ts         # 路由配置
-├── utils/               # 工具函数
-│   ├── dateUtils.ts     # 日期计算工具
-│   └── validators.ts    # 通用验证器
-├── App.vue
-└── main.ts
+│   └── index.ts              # 路由配置
+├── stores/
+│   ├── employee.ts           # 员工状态管理
+│   ├── leaveEntitlement.ts   # 年假额度管理
+│   ├── leaveUsage.ts         # 年假使用记录管理
+│   └── leaveAdjustment.ts    # 年假调整记录管理
+├── types/
+│   ├── employee.ts           # 员工类型定义
+│   ├── leave.ts              # 年假相关类型定义
+│   └── index.ts              # 类型导出
+├── utils/
+│   ├── leaveCalculator.ts    # 年假计算逻辑
+│   ├── dateUtils.ts          # 日期处理工具
+│   ├── storage.ts            # localStorage封装
+│   └── validation.ts         # 数据验证
+├── composables/
+│   ├── useLeaveExpiry.ts     # 年假过期逻辑
+│   ├── useLeaveReminder.ts   # 提醒逻辑
+│   └── useResponsive.ts      # 响应式断点Hook
+├── components/
+│   ├── common/               # 通用组件
+│   │   ├── Button.vue
+│   │   ├── Input.vue
+│   │   ├── Modal.vue
+│   │   └── Alert.vue
+│   ├── employee/             # 员工相关组件
+│   │   ├── EmployeeList.vue
+│   │   ├── EmployeeForm.vue
+│   │   └── EmployeeCard.vue
+│   ├── leave/                # 年假相关组件
+│   │   ├── LeaveBalance.vue
+│   │   ├── LeaveUsageForm.vue
+│   │   ├── LeaveAdjustmentForm.vue
+│   │   └── LeaveHistory.vue
+│   └── calendar/             # 日历相关组件
+│       ├── CalendarView.vue
+│       └── CalendarDay.vue
+└── views/
+    ├── Home.vue              # 首页/仪表板
+    ├── EmployeeManagement.vue # 员工管理页
+    ├── LeaveCalendar.vue     # 日历视图页
+    └── Settings.vue          # 设置页(导入导出)
 
 tests/
-├── unit/                # 单元测试
-│   ├── services/
+├── unit/
+│   ├── utils/
 │   │   ├── leaveCalculator.spec.ts
-│   │   ├── leaveValidator.spec.ts
-│   │   └── expiryManager.spec.ts
-│   └── utils/
-│       └── dateUtils.spec.ts
-└── component/           # 组件测试
-    ├── EmployeeList.spec.ts
-    └── CalendarView.spec.ts
-
-public/
-└── data/                # 本地 JSON 数据文件
-    ├── employees.json   # 员工数据
-    └── leaves.json      # 年假记录数据
+│   │   └── dateUtils.spec.ts
+│   └── stores/
+│       └── employee.spec.ts
+└── components/
+    └── employee/
+        └── EmployeeForm.spec.ts
 ```
 
-**Structure Decision**: 采用标准 Vue 3 单页应用架构,遵循 [CLAUDE.md](../../CLAUDE.md) 中定义的项目结构。关键设计决策:
-- **Models**: 纯 TypeScript 接口/类型定义,与 Vue 无关,便于复用和测试
-- **Services**: 业务逻辑与视图分离,核心计算引擎可独立测试
-- **Stores**: 使用 Pinia Composition API 风格 (setup syntax)
-- **Components vs Views**: Components 为可复用组件,Views 为路由页面
-- **Storage**: JSON 文件存储在 public/data/ 下,通过 storageService 统一访问
+**Structure Decision**: 采用标准Vue 3单页应用结构,按功能模块组织代码。核心业务逻辑封装在utils中,状态管理使用Pinia stores,UI组件按领域划分,确保代码可维护性和可测试性。
 
 ## Complexity Tracking
 
-无需填写 - Constitution Check 全部通过,无违规项需要说明。
+> **Fill ONLY if Constitution Check has violations that must be justified**
+
+N/A - 无宪法违规项需要说明

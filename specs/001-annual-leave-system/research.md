@@ -1,6 +1,7 @@
 # Technical Research: 员工年假统计系统
 
-**Feature**: 001-annual-leave-system | **Date**: 2025-11-13
+**Feature**: 001-annual-leave-system | **Date**: 2025-11-14
+**Updated**: 2025-11-14 (根据澄清会议更新)
 
 ## 研究目的
 
@@ -8,72 +9,77 @@
 
 ## 1. 数据存储方案
 
-### Decision: 本地 JSON 文件 + localStorage 备份
+### Decision: localStorage (主存储) + JSON文件导出/导入
 
 **Rationale**:
-- 需求明确要求"数据存储在本地,保存格式为json"
+- **澄清结果**: 用户明确选择localStorage作为主存储,JSON文件用于备份和迁移
 - 无需后端服务器,降低部署复杂度
-- 适合小型团队 (50-100 员工) 的数据规模
+- 适合小型团队 (~100 员工) 的数据规模
 - 支持离线使用
-- 浏览器刷新时可快速加载
+- localStorage API简单,浏览器原生支持
 
 **实现方案**:
-- 主存储: `public/data/employees.json` 和 `public/data/leaves.json`
-- 实时缓存: localStorage 作为运行时缓存和备份
-- 数据同步: 用户操作时更新 localStorage,提供"导出/导入"功能保存到文件
+- 主存储: localStorage (key: `annual-leave-system:data`)
+- 数据结构: 单一JSON对象包含所有实体
+- 备份/迁移: 提供导出到JSON文件和从JSON文件导入的功能
+- 版本控制: 数据包含版本号,支持未来迁移
 
 **Alternatives considered**:
-- **IndexedDB**: 功能强大但对于简单数据结构过于复杂,JSON 已满足需求
-- **纯 localStorage**: 存储限制 (5-10MB),不利于数据备份和迁移
+- **IndexedDB**: 功能强大但对于简单数据结构过于复杂
+- **纯JSON文件**: 无法实时持久化,每次都需要用户手动保存
 - **后端 API + 数据库**: 违反"纯前端"约束,增加部署复杂度
 
-## 2. 日期计算与年假计算引擎
+## 2. 日期处理库选择
 
-### Decision: 使用原生 JavaScript Date API + 自定义计算逻辑
+### Decision: date-fns
 
 **Rationale**:
-- 年假计算规则复杂 (入职周年、有效期、优先扣减),需要精确的日期计算
-- 原生 Date API 足够处理年月日计算
-- 避免引入重量级日期库 (如 moment.js) 增加包体积
-- TypeScript 类型安全保证计算正确性
+- 年假计算涉及复杂的日期运算(周年计算、日期差值、有效期)
+- date-fns提供tree-shakable的函数式API,只打包使用的函数
+- TypeScript支持完善,类型安全
+- Immutable设计,避免Date对象突变的副作用
+- 比原生Date API更直观易读,减少错误
 
-**实现关键逻辑**:
+**Key Functions**:
+- `addMonths`, `addYears`: 计算入职周年日
+- `differenceInYears`, `differenceInMonths`, `differenceInDays`: 计算雇用年限
+- `isAfter`, `isBefore`, `isSameDay`: 日期比较
+- `format`, `parseISO`: 日期格式化和解析
+- `startOfMonth`, `endOfMonth`, `eachDayOfInterval`: 日历视图辅助
+
+**实现示例**:
 ```typescript
-// 计算入职时长 (以年为单位,精确到小数)
-function calculateTenure(hireDate: Date, currentDate: Date): number {
-  const diffMs = currentDate.getTime() - hireDate.getTime();
-  return diffMs / (1000 * 60 * 60 * 24 * 365.25); // 考虑闰年
+import { differenceInYears, differenceInMonths, addMonths, addYears, isAfter } from 'date-fns';
+
+// 计算入职时长(以年和月表示)
+function calculateTenure(hireDate: Date, currentDate: Date) {
+  const years = differenceInYears(currentDate, hireDate);
+  const months = differenceInMonths(currentDate, hireDate) % 12;
+  return { years, months, totalMonths: differenceInMonths(currentDate, hireDate) };
 }
 
-// 根据入职时长获取年假天数
-function getAnnualLeaveDays(tenure: number): number {
-  if (tenure < 0.5) return 0;
-  if (tenure < 1.5) return 10;
-  if (tenure < 2.5) return 11;
-  if (tenure < 3.5) return 12;
-  if (tenure < 4.5) return 14;
-  if (tenure < 5.5) return 16;
-  if (tenure < 6.5) return 18;
-  return 20; // 上限
+// 根据入职月数获取年假天数
+function getAnnualLeaveDays(totalMonths: number): number {
+  if (totalMonths < 6) return 0;
+  if (totalMonths < 18) return 10;
+  if (totalMonths < 30) return 11;
+  if (totalMonths < 42) return 12;
+  if (totalMonths < 54) return 14;
+  if (totalMonths < 66) return 16;
+  if (totalMonths < 78) return 18;
+  return 20;
 }
 
-// 计算下次年假发放日期
-function getNextLeaveGrantDate(hireDate: Date, currentDate: Date): Date {
-  // 逻辑: 找到最近的入职周年日 (每半年一次)
-}
-
-// 计算年假有效期
+// 计算年假有效期(获得日期+2年)
 function getExpiryDate(grantDate: Date): Date {
-  const expiry = new Date(grantDate);
-  expiry.setFullYear(expiry.getFullYear() + 2);
-  return expiry;
+  return addYears(grantDate, 2);
 }
 ```
 
 **Alternatives considered**:
-- **date-fns**: 轻量级,但对于本项目的简单日期计算来说仍然是额外依赖
-- **Day.js**: 类似 date-fns,未采用原因相同
-- **Luxon**: 功能强大但包体积较大
+- **原生Date API**: 容易出错(月份从0开始,时区问题),代码可读性差
+- **Day.js**: 体积小但TypeScript支持一般,API与Moment类似(链式调用)
+- **Luxon**: 功能强大但体积大(~67KB),对时区的强调超出项目需求
 
 ## 3. 日历组件方案
 
@@ -217,23 +223,33 @@ describe('LeaveCalculator', () => {
 
 ## 6. UI 组件库选择
 
-### Decision: 不使用第三方 UI 组件库,自定义简洁 UI
+### Decision: Shadcn-vue
 
 **Rationale**:
-- 需求界面相对简单:表单、列表、日历
-- 自定义 UI 可以精确控制样式和交互
-- 避免引入大型 UI 库 (Element Plus, Ant Design Vue) 的额外体积
-- 练习和展示 Vue 3 Composition API 能力
+- **澄清结果**: 用户选择使用基于TailwindCSS的组件库
+- Shadcn-vue是Vue 3原生的实现,基于Radix Vue(无头组件)
+- 组件通过CLI复制到项目中,完全可控,无运行时依赖
+- 使用TailwindCSS样式,与项目技术栈完美契合
+- TypeScript原生支持,类型安全
+- 内置可访问性(ARIA)支持
 
-**实现方式**:
-- 使用原生 HTML 表单元素 + CSS 样式
-- 公共样式通过 CSS 变量管理主题
-- 简单的 loading/toast 提示组件自行实现
+**Key Components**:
+- Button, Input, Select: 表单基础组件
+- Dialog/Modal: 弹窗组件
+- Table: 员工列表展示
+- Alert/Toast: 提示和通知
+- Tabs: 多标签页切换
+
+**安装方式**:
+```bash
+npx shadcn-vue@latest init
+npx shadcn-vue@latest add button input select dialog table alert
+```
 
 **Alternatives considered**:
-- **Element Plus**: 功能全面但体积大 (~500KB),包含大量不需要的组件
-- **Naive UI**: 轻量级但仍然引入不必要的依赖
-- **Headless UI**: 适合需要完全自定义样式的场景,但对于简单需求来说过于抽象
+- **Headless UI**: Tailwind官方,但需要大量自定义样式工作
+- **DaisyUI**: 主要针对静态HTML,Vue集成不够原生
+- **纯手写组件**: 开发时间长,可访问性难以保证
 
 ## 7. 数据验证方案
 
@@ -316,16 +332,86 @@ export function validateLeaveUsage(usage: LeaveUsage, balance: number): Validati
 - **提前全面优化**: 过度工程化,应在遇到实际性能问题时再优化
 - **Web Worker**: 数据量不足以需要后台计算
 
+## 9. 响应式设计策略
+
+### Decision: 移动优先(Mobile-First) + Tailwind响应式断点
+
+**Rationale**:
+- **澄清结果**: 用户要求UI在手机和电脑上都能完美展示
+- Tailwind提供完善的响应式断点系统
+- 移动优先策略确保基础功能在小屏幕上可用
+- 渐进增强,利用大屏幕空间优化布局
+
+**Tailwind Breakpoints**:
+```css
+/* 默认: <640px (移动端) */
+sm: 640px   /* 小平板 */
+md: 768px   /* 平板/小桌面 */
+lg: 1024px  /* 桌面 */
+xl: 1280px  /* 大桌面 */
+```
+
+**响应式策略**:
+
+1. **导航布局**:
+   - 移动端(<768px): 汉堡菜单 + 抽屉导航
+   - 桌面端(≥768px): 侧边栏导航
+
+2. **员工列表**:
+   - 移动端: 卡片布局(垂直堆叠)
+   - 桌面端: 表格布局(多列展示)
+
+3. **日历视图**:
+   - 移动端: 紧凑月视图,可滑动
+   - 桌面端: 完整月视图 + 侧边栏详情
+
+4. **表单**:
+   - 移动端: 单列布局,全屏对话框
+   - 桌面端: 双列布局,居中对话框
+
+**实现示例**:
+```vue
+<!-- 响应式网格布局 -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+  <EmployeeCard v-for="emp in employees" :key="emp.id" :employee="emp" />
+</div>
+
+<!-- 响应式导航 -->
+<nav class="fixed md:static bottom-0 md:bottom-auto w-full md:w-64">
+  <!-- 移动端底部导航,桌面端侧边栏 -->
+</nav>
+
+<!-- 响应式表格/卡片切换 -->
+<div class="block md:hidden">
+  <EmployeeCard /> <!-- 移动端卡片 -->
+</div>
+<div class="hidden md:block">
+  <EmployeeTable /> <!-- 桌面端表格 -->
+</div>
+```
+
+**测试设备目标**:
+- 移动端: iPhone SE (375px), iPhone 14 (390px), Android (360px)
+- 平板: iPad (768px), iPad Pro (1024px)
+- 桌面: MacBook (1280px), 外接显示器 (1920px)
+
+**Alternatives considered**:
+- **固定布局**: 不适配移动端,用户体验差
+- **独立移动版**: 开发成本高,维护困难
+
+---
+
 ## 总结
 
 所有技术决策已明确,主要选择:
-- **存储**: 本地 JSON + localStorage
-- **日期计算**: 原生 Date API + 自定义逻辑
-- **日历**: 自定义 CSS Grid 组件
+- **存储**: localStorage (主) + JSON文件导出导入
+- **日期计算**: date-fns (tree-shakable, TypeScript友好)
+- **日历**: 自定义CSS Grid组件
 - **状态管理**: Pinia (Composition API)
 - **测试**: Vitest + Vue Test Utils,重点测试业务逻辑
-- **UI**: 无第三方库,自定义简洁界面
+- **UI组件库**: Shadcn-vue (TailwindCSS + Radix Vue)
+- **样式**: TailwindCSS 3.x (移动优先,响应式断点)
 - **验证**: TypeScript + 自定义验证函数
 - **性能**: 按需优化,关注日历和列表
 
-所有技术选择均符合项目约束 (纯前端、本地存储、Vue 3 生态),无需进一步研究。可以进入 Phase 1 设计阶段。
+所有技术选择均符合项目约束(纯前端、本地存储、Vue 3生态、响应式),无需进一步研究。可以进入Phase 1设计阶段。

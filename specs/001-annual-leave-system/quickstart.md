@@ -1,6 +1,7 @@
 # Quick Start Guide: 员工年假统计系统
 
-**Feature**: 001-annual-leave-system | **Date**: 2025-11-13
+**Feature**: 001-annual-leave-system | **Date**: 2025-11-14
+**Updated**: 2025-11-14 (根据澄清会议更新)
 **Branch**: `001-annual-leave-system`
 
 ## 目标受众
@@ -431,11 +432,11 @@ function calculateTenure(hireDate: Date, currentDate: Date): number {
 
 ### Q3: 数据存储在哪里?
 
-A: 双重存储策略:
-- **运行时**: localStorage (快速访问)
-- **持久化**: JSON 文件 (通过导出/导入功能)
+A: **localStorage (主存储) + JSON文件导入导出**:
+- **主存储**: localStorage (所有数据自动保存,浏览器持久化)
+- **备份/迁移**: JSON文件导出/导入功能
 
-用户可以定期导出 JSON 文件作为备份。
+用户可以定期导出JSON文件作为备份,或在不同设备间迁移数据。
 
 ---
 

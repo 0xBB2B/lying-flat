@@ -1,6 +1,7 @@
 # Data Model: 员工年假统计系统
 
-**Feature**: 001-annual-leave-system | **Date**: 2025-11-13
+**Feature**: 001-annual-leave-system | **Date**: 2025-11-14
+**Updated**: 2025-11-14 (根据澄清会议更新)
 **Source**: [spec.md](./spec.md) → Key Entities section
 
 ## 概述
@@ -68,11 +69,18 @@ interface LeaveEntitlement {
   employeeId: string;            // 关联的员工 ID
   days: number;                  // 年假天数
   grantDate: Date;               // 发放日期
-  expiryDate: Date;              // 过期日期 (grantDate + 2年)
+  source: EntitlementSource;     // 来源类型 (系统自动/手动调整)
+  expiryDate: Date | null;       // 过期日期 (系统自动:grantDate+2年;手动调整:null/永久有效)
   status: EntitlementStatus;     // 有效状态
   usedDays: number;              // 已使用天数
   remainingDays: number;         // 剩余天数 (days - usedDays)
+  adjustmentId?: string;         // 关联的调整记录ID(仅当source=manual时)
   createdAt: Date;               // 记录创建时间
+}
+
+enum EntitlementSource {
+  AUTO = 'auto',                 // 系统自动发放
+  MANUAL = 'manual'              // 手动调整增加
 }
 
 enum EntitlementStatus {
@@ -87,19 +95,22 @@ enum EntitlementStatus {
 | id | string | ✅ | 额度唯一标识 | UUID v4 格式 |
 | employeeId | string | ✅ | 员工 ID | 必须存在于 Employee 表 |
 | days | number | ✅ | 发放天数 | 整数,范围 10-20 |
-| grantDate | Date | ✅ | 发放日期 | 通常为入职周年日 |
-| expiryDate | Date | ✅ | 过期日期 | grantDate + 2年 |
+| grantDate | Date | ✅ | 发放日期 | 通常为入职周年日或手动调整日期 |
+| source | EntitlementSource | ✅ | 来源类型 | 枚举值: auto 或 manual |
+| expiryDate | Date\|null | ✅ | 过期日期 | auto: grantDate+2年; manual: null(永久有效) |
 | status | EntitlementStatus | ✅ | 有效状态 | 枚举值: active 或 expired |
 | usedDays | number | ✅ | 已使用天数 | >= 0, <= days,支持小数 (0.5) |
 | remainingDays | number | ✅ | 剩余天数 | days - usedDays,自动计算 |
+| adjustmentId | string | ❌ | 调整记录ID | 仅source=manual时必填 |
 | createdAt | Date | ✅ | 创建时间 | 自动生成 |
 
-**业务规则**:
-- 每个员工在每个入职周年日自动创建一条 `LeaveEntitlement` 记录
-- `expiryDate` 固定为 `grantDate` 的 2 年后同一日期
-- 当 `currentDate > expiryDate` 时,`status` 自动变更为 `expired`
-- 过期的额度不再计入员工可用余额
-- 使用年假时优先扣减最早即将过期的额度 (FIFO)
+**业务规则** (根据澄清会议更新):
+- 每个员工在每个入职周年日自动创建一条 `source=auto` 的 `LeaveEntitlement` 记录
+- 系统自动发放的额度: `expiryDate` 为 `grantDate` 的 2 年后同一日期
+- **手动调整增加的额度**: `source=manual`, `expiryDate=null` (永久有效,不过期)
+- 过期判定在页面加载时实时计算,不物理修改数据
+- 当 `currentDate > expiryDate` 且 `expiryDate != null` 时,该额度被视为过期,不计入可用余额
+- 使用年假时优先扣减最早即将过期的额度 (FIFO),手动调整的永久有效额度最后扣减
 
 **发放规则对照表**:
 | 入职时长 | 发放天数 | 触发时间 |
