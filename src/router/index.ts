@@ -17,6 +17,30 @@ const router = createRouter({
       // which is lazy-loaded when the route is visited.
       component: () => import('../views/AboutView.vue'),
     },
+    // T027: 员工管理路由
+    {
+      path: '/employees',
+      name: 'employees',
+      component: () => import('../views/EmployeeManagement.vue'),
+    },
+    // T035: 员工详情路由
+    {
+      path: '/employees/:id',
+      name: 'employee-detail',
+      component: () => import('../views/EmployeeDetail.vue'),
+    },
+    // T049: 日历视图路由
+    {
+      path: '/calendar',
+      name: 'calendar',
+      component: () => import('../views/LeaveCalendar.vue'),
+    },
+    // T068: 设置页面路由
+    {
+      path: '/settings',
+      name: 'settings',
+      component: () => import('../views/Settings.vue'),
+    },
   ],
 })
 
