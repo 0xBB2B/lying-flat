@@ -51,39 +51,46 @@ function validateForm(): boolean {
   dateError.value = null
   notesError.value = null
   error.value = null
+  let isFormValid = true
 
   if (!date.value.trim()) {
     dateError.value = '请选择休假日期'
-    return false
+    isFormValid = false
   }
 
   // 验证日期不能是未来
-  const selectedDate = new Date(date.value)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
+  if (date.value.trim()) {
+    const selectedDate = new Date(date.value + 'T00:00:00')
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
 
-  if (selectedDate > today) {
-    dateError.value = '休假日期不能晚于今天'
-    return false
-  }
-
-  // 验证余额是否充足
-  if (!previewBalanceValid.value) {
-    error.value = `年假余额不足。当前余额: ${props.currentBalance} 天,需要: ${selectedDays.value} 天`
-    return false
+    if (selectedDate > today) {
+      dateError.value = '休假日期不能晚于今天'
+      isFormValid = false
+    }
   }
 
   // 备注长度验证(可选)
   if (notes.value.trim().length > 200) {
     notesError.value = '备注不能超过 200 个字符'
-    return false
+    isFormValid = false
   }
 
-  return true
+  // 验证余额是否充足 (在所有其他验证都通过后再检查)
+  if (isFormValid && !previewBalanceValid.value) {
+    error.value = `年假余额不足。当前余额: ${props.currentBalance} 天,需要: ${selectedDays.value} 天`
+    isFormValid = false
+  }
+
+  return isFormValid
 }
 
 async function handleSubmit() {
-  if (!validateForm()) {
+  // 先验证表单
+  const isValid = validateForm()
+
+  // 如果验证失败,不继续提交,但错误信息已经设置好了
+  if (!isValid) {
     return
   }
 
@@ -91,7 +98,7 @@ async function handleSubmit() {
   error.value = null
 
   try {
-    const usageDate = new Date(date.value)
+    const usageDate = new Date(date.value + 'T00:00:00')
     usageDate.setHours(0, 0, 0, 0)
 
     await usageStore.recordUsage(
@@ -136,10 +143,7 @@ function handleCancel() {
     <form @submit.prevent="handleSubmit" class="space-y-6">
       <!-- 休假日期 -->
       <div class="form-group">
-        <label
-          for="date"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
+        <label for="date" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           休假日期 <span class="text-red-500">*</span>
         </label>
         <input
@@ -148,12 +152,7 @@ function handleCancel() {
           type="date"
           :disabled="submitting"
           :max="new Date().toISOString().split('T')[0]"
-          class="
-            w-full px-4 py-2 border rounded-md
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100
-          "
+          class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           :class="{
             'border-red-500': dateError,
             'border-gray-300': !dateError,
@@ -162,9 +161,7 @@ function handleCancel() {
         <p v-if="dateError" class="mt-1 text-sm text-red-600 dark:text-red-400">
           {{ dateError }}
         </p>
-        <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          只能选择今天或之前的日期
-        </p>
+        <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">只能选择今天或之前的日期</p>
       </div>
 
       <!-- 休假类型 -->
@@ -181,9 +178,7 @@ function handleCancel() {
               :disabled="submitting"
               class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
             />
-            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-              全天休假 (1 天)
-            </span>
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300"> 全天休假 (1 天) </span>
           </label>
           <label class="flex items-center cursor-pointer">
             <input
@@ -193,9 +188,7 @@ function handleCancel() {
               :disabled="submitting"
               class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
             />
-            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-              上午休假 (0.5 天)
-            </span>
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300"> 上午休假 (0.5 天) </span>
           </label>
           <label class="flex items-center cursor-pointer">
             <input
@@ -205,19 +198,14 @@ function handleCancel() {
               :disabled="submitting"
               class="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
             />
-            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">
-              下午休假 (0.5 天)
-            </span>
+            <span class="ml-2 text-sm text-gray-700 dark:text-gray-300"> 下午休假 (0.5 天) </span>
           </label>
         </div>
       </div>
 
       <!-- 备注 -->
       <div class="form-group">
-        <label
-          for="notes"
-          class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-        >
+        <label for="notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           备注 (可选)
         </label>
         <textarea
@@ -226,12 +214,7 @@ function handleCancel() {
           rows="3"
           placeholder="请输入备注信息 (可选)"
           :disabled="submitting"
-          class="
-            w-full px-4 py-2 border rounded-md
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100
-          "
+          class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           :class="{
             'border-red-500': notesError,
             'border-gray-300': !notesError,
@@ -241,9 +224,7 @@ function handleCancel() {
           <p v-if="notesError" class="text-sm text-red-600 dark:text-red-400">
             {{ notesError }}
           </p>
-          <p class="text-xs text-gray-500 dark:text-gray-400 ml-auto">
-            {{ notes.length }} / 200
-          </p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 ml-auto">{{ notes.length }} / 200</p>
         </div>
       </div>
 
@@ -304,12 +285,7 @@ function handleCancel() {
         <button
           type="submit"
           :disabled="!isValid || submitting || !previewBalanceValid"
-          class="
-            flex-1 px-6 py-2 bg-blue-600 text-white font-medium rounded-md
-            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-            disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500
-            transition-colors
-          "
+          class="flex-1 px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500 transition-colors"
         >
           <span v-if="submitting">提交中...</span>
           <span v-else>确认记录</span>
@@ -319,13 +295,7 @@ function handleCancel() {
           type="button"
           @click="handleCancel"
           :disabled="submitting"
-          class="
-            px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md
-            hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600
-            transition-colors
-          "
+          class="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           取消
         </button>

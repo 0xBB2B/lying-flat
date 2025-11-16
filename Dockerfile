@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 # 复制项目文件
 COPY . .
 
-# 构建应用
+# 构建应用 (会自动运行 prebuild 测试)
 RUN pnpm build
 
 # 生产阶段
