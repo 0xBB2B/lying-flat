@@ -124,6 +124,19 @@ function handleCancel() {
 
 // 设置默认日期为今天
 const todayStr = format(new Date(), 'yyyy-MM-dd')
+
+// Expose for testing
+defineExpose({
+  name,
+  hireDate,
+  submitting,
+  error,
+  nameError,
+  hireDateError,
+  isValid,
+  handleSubmit,
+  handleCancel,
+})
 </script>
 
 <template>
@@ -142,12 +155,7 @@ const todayStr = format(new Date(), 'yyyy-MM-dd')
           type="text"
           placeholder="请输入员工姓名"
           :disabled="submitting"
-          class="
-            w-full px-4 py-2 border rounded-md
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100
-          "
+          class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           :class="{
             'border-red-500': nameError,
             'border-gray-300': !nameError,
@@ -172,12 +180,7 @@ const todayStr = format(new Date(), 'yyyy-MM-dd')
           type="date"
           :max="todayStr"
           :disabled="submitting"
-          class="
-            w-full px-4 py-2 border rounded-md
-            focus:outline-none focus:ring-2 focus:ring-blue-500
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100
-          "
+          class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           :class="{
             'border-red-500': hireDateError,
             'border-gray-300': !hireDateError,
@@ -189,7 +192,10 @@ const todayStr = format(new Date(), 'yyyy-MM-dd')
       </div>
 
       <!-- 错误信息 -->
-      <div v-if="error" class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+      <div
+        v-if="error"
+        class="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md"
+      >
         <p class="text-sm text-red-800 dark:text-red-200">{{ error }}</p>
       </div>
 
@@ -198,12 +204,7 @@ const todayStr = format(new Date(), 'yyyy-MM-dd')
         <button
           type="submit"
           :disabled="!isValid || submitting"
-          class="
-            flex-1 px-6 py-2 bg-blue-600 text-white font-medium rounded-md
-            hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-            disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500
-            transition-colors
-          "
+          class="flex-1 px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:bg-gray-300 disabled:cursor-not-allowed disabled:text-gray-500 transition-colors"
         >
           <span v-if="submitting">提交中...</span>
           <span v-else>添加员工</span>
@@ -213,13 +214,7 @@ const todayStr = format(new Date(), 'yyyy-MM-dd')
           type="button"
           @click="handleCancel"
           :disabled="submitting"
-          class="
-            px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md
-            hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2
-            disabled:bg-gray-100 disabled:cursor-not-allowed
-            dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600
-            transition-colors
-          "
+          class="px-6 py-2 bg-gray-200 text-gray-700 font-medium rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2 disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           取消
         </button>
