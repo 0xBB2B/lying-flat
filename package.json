@@ -8,11 +8,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "prebuild": "vitest run",
     "build": "run-p type-check \"build-only {@}\" --",
     "preview": "vite preview",
     "build-only": "vite build",
-    "prebuild:github": "vitest run",
     "build:github": "VITE_BASE_URL=/lying-flat/ vite build",
     "type-check": "vue-tsc --build",
     "lint": "eslint . --fix --cache",

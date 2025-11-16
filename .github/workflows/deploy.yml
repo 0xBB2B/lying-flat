@@ -55,10 +55,8 @@ jobs:
 
       - name: Run tests
         run: pnpm run test:unit
-        env:
-          CI: true
 
-      - name: Build (with auto test)
+      - name: Build
         run: pnpm run build:github
         env:
           NODE_ENV: production
