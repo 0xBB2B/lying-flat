@@ -1,48 +1,140 @@
-# lying-flat
+# 躺平 (Lying Flat) - 员工年假统计系统
 
-This template should help get you started developing with Vue 3 in Vite.
+[![Vue 3](https://img.shields.io/badge/Vue-3.5+-4FC08D?logo=vue.js&logoColor=white)](https://vuejs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9+-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-7.x-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Pinia](https://img.shields.io/badge/Pinia-3.x-FFD859?logo=pinia&logoColor=white)](https://pinia.vuejs.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.4+-38B2AC?logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Recommended IDE Setup
+一个现代化的员工年假管理系统，基于日本劳动基准法的年次有给休暇制度。纯前端应用，数据本地存储，无需服务器。
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+## ✨ 特性
 
-## Recommended Browser Setup
+- 🎯 **自动计算年假**：根据入职时长自动发放年假（6个月起10天，最高20天）
+- 📅 **日历视图**：直观展示团队休假安排
+- ⏰ **过期提醒**：自动追踪2年有效期，智能提醒
+- 💾 **数据备份**：支持 JSON 导出/导入，本地存储
+- 📱 **响应式设计**：完美适配移动端和桌面端
+- 🧪 **完整测试**：85%+ 代码覆盖率
 
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
+## 📊 年假规则
 
-## Type Support for `.vue` Imports in TS
+| 入职年限 | 年假天数 | 说明 |
+|---------|---------|------|
+| 6 个月   | 10 天   | 首次发放 |
+| 1.5 年   | 11 天   | |
+| 2.5 年   | 12 天   | |
+| 3.5 年   | 14 天   | |
+| 4.5 年   | 16 天   | |
+| 5.5 年   | 18 天   | |
+| 6.5 年+  | 20 天   | 上限 |
 
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
+- ⏱️ **有效期**：2年（手动调整的年假永久有效）
+- 🔄 **发放机制**：周年日自动发放，累加不覆盖
+- 📝 **使用方式**：整天或半天（0.5天）
 
-## Customize configuration
+## 🚀 快速开始
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+### 本地开发
 
-## Project Setup
-
-```sh
+```bash
+# 安装依赖
 pnpm install
-```
 
-### Compile and Hot-Reload for Development
-
-```sh
+# 启动开发服务器
 pnpm dev
 ```
 
-### Type-Check, Compile and Minify for Production
+访问 http://localhost:5173
 
-```sh
-pnpm build
+### Docker 部署
+
+```bash
+# 使用 Docker Compose
+docker-compose up -d
+
+# 或手动构建
+docker build -t lying-flat .
+docker run -d -p 8080:80 lying-flat
 ```
 
-### Lint with [ESLint](https://eslint.org/)
+### 常用命令
 
-```sh
-pnpm lint
+```bash
+pnpm build          # 构建生产版本
+pnpm test:unit      # 运行测试
+pnpm type-check     # 类型检查
+pnpm lint           # 代码检查
 ```
+
+## 📁 项目结构
+
+```
+src/
+├── components/      # 22个 Vue 组件
+│   ├── calendar/    # 日历视图
+│   ├── employee/    # 员工管理
+│   └── leave/       # 年假相关
+├── stores/          # Pinia 状态管理
+├── views/           # 页面组件
+├── utils/           # 工具函数（年假计算、日期等）
+└── types/           # TypeScript 类型定义
+```
+
+## 🛠️ 技术栈
+
+- **Vue 3.5+** - Composition API + `<script setup>`
+- **TypeScript 5.9+** - 严格模式
+- **Vite 7.x** - 构建工具
+- **Pinia 3.x** - 状态管理
+- **Tailwind CSS + shadcn-vue** - UI 框架
+- **Vitest** - 测试框架
+
+## ❓ 常见问题
+
+<details>
+<summary><b>数据存储在哪里？</b></summary>
+
+使用 localStorage 本地存储，支持 JSON 文件导出/导入备份。
+</details>
+
+<details>
+<summary><b>年假如何自动更新？</b></summary>
+
+系统在员工入职周年日自动计算并发放年假，累加不覆盖。
+</details>
+
+<details>
+<summary><b>手动调整的年假会过期吗？</b></summary>
+
+不会。手动调整的年假永久有效，只有系统自动发放的年假受 2 年有效期限制。
+</details>
+
+<details>
+<summary><b>如何备份数据？</b></summary>
+
+进入"设置"页面，点击"导出数据"按钮，下载 JSON 文件。
+</details>
+
+## 📚 文档
+
+详细文档位于 `specs/001-annual-leave-system/` 目录：
+
+- **[功能规格](specs/001-annual-leave-system/spec.md)** - 完整需求说明
+- **[开发指南](specs/001-annual-leave-system/quickstart.md)** - 开发者快速上手
+- **[数据模型](specs/001-annual-leave-system/data-model.md)** - 数据结构设计
+- **[接口契约](specs/001-annual-leave-system/contracts/)** - API 和组件接口
+- **[年假制度](annual_leave_rules.md)** - 日本年假详细规则
+
+## 🤝 贡献
+
+欢迎 PR！建议先阅读 [开发指南](specs/001-annual-leave-system/quickstart.md)。
+
+## 📄 许可证
+
+MIT License - 详见 [LICENSE](LICENSE) 文件
+
+---
+
+**快速上手：`pnpm dev` 启动开发！** 🚀
