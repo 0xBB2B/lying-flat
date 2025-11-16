@@ -3,7 +3,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import LeaveBalance from '@/components/leave/LeaveBalance.vue'
-import type { LeaveBalance as LeaveBalanceType, LeaveEntitlement, EntitlementSource, EntitlementStatus } from '@/types'
+import type {
+  LeaveBalance as LeaveBalanceType,
+  LeaveEntitlement,
+  EntitlementSource,
+  EntitlementStatus,
+} from '@/types'
 
 describe('LeaveBalance.vue', () => {
   let mockBalance: LeaveBalanceType
@@ -294,6 +299,7 @@ describe('LeaveBalance.vue', () => {
     })
 
     it('应该正确处理永久有效的手动额度(expiryDate为null)', () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const manualEntitlement: LeaveEntitlement = {
         id: 'ent-manual',
         employeeId: 'emp-001',

@@ -80,12 +80,8 @@ function navigateToSettings() {
 
     <!-- 标题区域 -->
     <div class="mb-8">
-      <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-        仪表板
-      </h1>
-      <p class="text-gray-600 dark:text-gray-400">
-        员工年假统计系统概览
-      </p>
+      <h1 class="text-2xl md:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">仪表板</h1>
+      <p class="text-gray-600 dark:text-gray-400">员工年假统计系统概览</p>
     </div>
 
     <!-- 统计卡片 -->
@@ -125,67 +121,41 @@ function navigateToSettings() {
 
     <!-- 快速操作 -->
     <div class="mb-8">
-      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">
-        快速操作
-      </h2>
+      <h2 class="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">快速操作</h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <!-- 员工管理 -->
         <button
           @click="navigateToEmployees"
-          class="
-            flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md
-            hover:shadow-lg transition-shadow border-2 border-transparent
-            hover:border-blue-500 text-left
-          "
+          class="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow border-2 border-transparent hover:border-blue-500 text-left"
         >
           <div class="text-4xl">📝</div>
           <div>
-            <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-              员工管理
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              查看和管理员工信息
-            </p>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">员工管理</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">查看和管理员工信息</p>
           </div>
         </button>
 
         <!-- 日历视图 -->
         <button
           @click="navigateToCalendar"
-          class="
-            flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md
-            hover:shadow-lg transition-shadow border-2 border-transparent
-            hover:border-green-500 text-left
-          "
+          class="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow border-2 border-transparent hover:border-green-500 text-left"
         >
           <div class="text-4xl">📅</div>
           <div>
-            <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-              日历视图
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              查看休假安排日历
-            </p>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">日历视图</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">查看休假安排日历</p>
           </div>
         </button>
 
         <!-- 数据管理 -->
         <button
           @click="navigateToSettings"
-          class="
-            flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md
-            hover:shadow-lg transition-shadow border-2 border-transparent
-            hover:border-purple-500 text-left
-          "
+          class="flex items-center gap-4 p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow border-2 border-transparent hover:border-purple-500 text-left"
         >
           <div class="text-4xl">⚙️</div>
           <div>
-            <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">
-              数据管理
-            </h3>
-            <p class="text-sm text-gray-600 dark:text-gray-400">
-              导入导出和统计报表
-            </p>
+            <h3 class="font-semibold text-gray-900 dark:text-gray-100 mb-1">数据管理</h3>
+            <p class="text-sm text-gray-600 dark:text-gray-400">导入导出和统计报表</p>
           </div>
         </button>
       </div>
@@ -196,13 +166,17 @@ function navigateToSettings() {
       v-if="stats.totalEmployees === 0"
       class="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-gray-800 dark:to-gray-700 p-6 md:p-8 rounded-lg"
     >
-      <h2 class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 md:mb-6 text-center">
+      <h2
+        class="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100 mb-4 md:mb-6 text-center"
+      >
         开始使用
       </h2>
       <p class="text-center text-gray-700 dark:text-gray-300 mb-6">
         您还没有添加任何员工,点击上方"员工管理"开始添加员工信息
       </p>
-      <ul class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 text-sm md:text-base text-gray-700 dark:text-gray-300">
+      <ul
+        class="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 text-sm md:text-base text-gray-700 dark:text-gray-300"
+      >
         <li class="flex items-start gap-2">
           <span class="text-green-600 dark:text-green-400 flex-shrink-0">✓</span>
           <span>根据劳动基准法自动计算年假额度</span>

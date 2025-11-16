@@ -6,7 +6,6 @@ import { useLeaveUsageStore } from '@/stores/leaveUsage'
 import { useLeaveAdjustmentStore } from '@/stores/leaveAdjustment'
 import StatisticsCard from '@/components/common/StatisticsCard.vue'
 import ImportExportPanel from '@/components/settings/ImportExportPanel.vue'
-import { differenceInDays } from 'date-fns'
 
 const employeeStore = useEmployeeStore()
 const entitlementStore = useLeaveEntitlementStore()

@@ -22,7 +22,7 @@ const employeeStore = useEmployeeStore()
 const leaveEntitlementStore = useLeaveEntitlementStore()
 const leaveAdjustmentStore = useLeaveAdjustmentStore()
 const leaveUsageStore = useLeaveUsageStore()
-const { getEmployeeReminders, dismissReminder } = useLeaveReminder()
+const { getEmployeeReminders } = useLeaveReminder()
 
 // State
 const loading = ref(false)
@@ -50,9 +50,7 @@ const adjustmentHistory = computed(() =>
   leaveAdjustmentStore.getAdjustmentsByEmployeeId(employeeId.value),
 )
 
-const usageHistory = computed(() =>
-  leaveUsageStore.getUsagesByEmployeeId(employeeId.value),
-)
+const usageHistory = computed(() => leaveUsageStore.getUsagesByEmployeeId(employeeId.value))
 
 const employeeStatusLabel = computed(() => {
   if (!employee.value) return ''
@@ -67,6 +65,7 @@ const employeeStatusClass = computed(() => {
 })
 
 // 获取该员工的提醒
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const employeeReminders = computed(() => {
   if (!employee.value) return []
   return getEmployeeReminders(employeeId.value)
@@ -109,10 +108,7 @@ async function handleDeleteUsage(id: string) {
   try {
     await leaveUsageStore.deleteUsage(id)
     // 刷新数据 - 需要同时刷新额度和使用记录
-    await Promise.all([
-      leaveEntitlementStore.loadEntitlements(),
-      leaveUsageStore.loadUsages()
-    ])
+    await Promise.all([leaveEntitlementStore.loadEntitlements(), leaveUsageStore.loadUsages()])
   } catch (e) {
     console.error('Failed to delete usage:', e)
     alert(e instanceof Error ? e.message : '删除失败')
@@ -125,7 +121,7 @@ async function handleDeleteAdjustment(id: string) {
     // 刷新数据 - 需要同时刷新额度和调整记录
     await Promise.all([
       leaveEntitlementStore.loadEntitlements(),
-      leaveAdjustmentStore.loadAdjustments()
+      leaveAdjustmentStore.loadAdjustments(),
     ])
   } catch (e) {
     console.error('Failed to delete adjustment:', e)
@@ -170,7 +166,7 @@ const unusedLeaveOnTermination = computed(() => {
     totalRemaining: leaveBalance.value.remainingDays,
     totalEntitlement: leaveBalance.value.totalEntitlement,
     totalUsed: leaveBalance.value.usedDays,
-    terminatedAt: employee.value.terminatedAt
+    terminatedAt: employee.value.terminatedAt,
   }
 })
 
@@ -203,7 +199,9 @@ onMounted(async () => {
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- 加载状态 -->
       <div v-if="loading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div
+          class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+        ></div>
         <p class="mt-4 text-gray-600 dark:text-gray-400">加载中...</p>
       </div>
 
@@ -243,11 +241,7 @@ onMounted(async () => {
           <div class="flex items-start justify-between mb-6">
             <button
               @click="goBack"
-              class="
-                flex items-center text-gray-600 dark:text-gray-400
-                hover:text-gray-900 dark:hover:text-gray-100
-                transition-colors
-              "
+              class="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 transition-colors"
             >
               <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -259,10 +253,7 @@ onMounted(async () => {
               </svg>
               返回列表
             </button>
-            <span
-              class="px-3 py-1 rounded-full text-sm font-medium"
-              :class="employeeStatusClass"
-            >
+            <span class="px-3 py-1 rounded-full text-sm font-medium" :class="employeeStatusClass">
               {{ employeeStatusLabel }}
             </span>
           </div>
@@ -341,32 +332,20 @@ onMounted(async () => {
           <button
             v-if="!showUsageForm"
             @click="showUsageForm = true"
-            class="
-              px-6 py-2 bg-green-600 text-white font-medium rounded-md
-              hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2
-              transition-colors
-            "
+            class="px-6 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-colors"
           >
             📅 记录休假
           </button>
           <button
             v-if="!showAdjustmentForm"
             @click="showAdjustmentForm = true"
-            class="
-              px-6 py-2 bg-blue-600 text-white font-medium rounded-md
-              hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
-              transition-colors
-            "
+            class="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
           >
             ✏️ 手动调整年假
           </button>
           <button
             @click="handleTerminateClick"
-            class="
-              px-6 py-2 bg-red-600 text-white font-medium rounded-md
-              hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2
-              transition-colors
-            "
+            class="px-6 py-2 bg-red-600 text-white font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-colors"
           >
             🚪 标记离职
           </button>
@@ -477,17 +456,15 @@ onMounted(async () => {
               id="terminate-date"
               v-model="terminateDate"
               type="date"
-              class="
-                w-full px-3 py-2 border border-gray-300 dark:border-gray-600
-                rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500
-                dark:bg-gray-700 dark:text-gray-100
-              "
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-red-500 focus:border-red-500 dark:bg-gray-700 dark:text-gray-100"
               :max="format(new Date(), 'yyyy-MM-dd')"
             />
           </div>
 
           <div v-if="leaveBalance" class="text-sm text-gray-600 dark:text-gray-400">
-            <p>当前剩余年假: <span class="font-medium">{{ leaveBalance.remainingDays }} 天</span></p>
+            <p>
+              当前剩余年假: <span class="font-medium">{{ leaveBalance.remainingDays }} 天</span>
+            </p>
             <p class="text-xs mt-1">离职后将记录未使用天数供HR参考</p>
           </div>
         </div>
@@ -495,19 +472,13 @@ onMounted(async () => {
         <div class="flex gap-3">
           <button
             @click="cancelTerminate"
-            class="
-              flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100
-              rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors
-            "
+            class="flex-1 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
           >
             取消
           </button>
           <button
             @click="confirmTerminate"
-            class="
-              flex-1 px-4 py-2 bg-red-600 text-white rounded-md
-              hover:bg-red-700 transition-colors
-            "
+            class="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
           >
             确认离职
           </button>

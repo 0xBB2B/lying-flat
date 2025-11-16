@@ -38,11 +38,6 @@ export const useStorageStore = defineStore('storage', () => {
    * 保存所有数据到 localStorage
    */
   async function saveAll(): Promise<void> {
-    const employeeStore = useEmployeeStore()
-    const entitlementStore = useLeaveEntitlementStore()
-    const usageStore = useLeaveUsageStore()
-    const adjustmentStore = useLeaveAdjustmentStore()
-
     // 各个 store 已经在各自的操作中保存数据到 localStorage
     // 这里只需要确保所有数据都已同步
     // 注意:这些方法在各个 store 中是私有的,不在返回的对象中
@@ -82,7 +77,7 @@ export const useStorageStore = defineStore('storage', () => {
         employees: employeeStore.employees,
         entitlements: entitlementStore.entitlements,
         usages: usageStore.usages,
-        adjustments: adjustmentStore.adjustments
+        adjustments: adjustmentStore.adjustments,
       }
 
       lastExportDate.value = new Date()
@@ -123,8 +118,8 @@ export const useStorageStore = defineStore('storage', () => {
         employees: 0,
         entitlements: 0,
         usages: 0,
-        adjustments: 0
-      }
+        adjustments: 0,
+      },
     }
 
     // 检查数据是否为对象
@@ -236,7 +231,7 @@ export const useStorageStore = defineStore('storage', () => {
         employees: finalEmployees,
         entitlements: finalEntitlements,
         usages: finalUsages,
-        adjustments: finalAdjustments
+        adjustments: finalAdjustments,
       }
 
       const { save } = await import('@/utils/storage')
@@ -260,7 +255,7 @@ export const useStorageStore = defineStore('storage', () => {
    * 从文件导入数据
    */
   async function importFromFile(file: File, merge = false): Promise<ImportResult> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const reader = new FileReader()
 
       reader.onload = async (event) => {
@@ -278,8 +273,8 @@ export const useStorageStore = defineStore('storage', () => {
               employees: 0,
               entitlements: 0,
               usages: 0,
-              adjustments: 0
-            }
+              adjustments: 0,
+            },
           })
         }
       }
@@ -293,8 +288,8 @@ export const useStorageStore = defineStore('storage', () => {
             employees: 0,
             entitlements: 0,
             usages: 0,
-            adjustments: 0
-          }
+            adjustments: 0,
+          },
         })
       }
 
@@ -316,6 +311,6 @@ export const useStorageStore = defineStore('storage', () => {
     downloadJSON,
     validateImportData,
     importData,
-    importFromFile
+    importFromFile,
   }
 })

@@ -5,7 +5,6 @@ import { createPinia, setActivePinia } from 'pinia'
 import LeaveUsageForm from '@/components/leave/LeaveUsageForm.vue'
 import { useLeaveUsageStore } from '@/stores/leaveUsage'
 import { LeaveType } from '@/types'
-import * as storage from '@/utils/storage'
 
 // Mock storage utilities
 vi.mock('@/utils/storage', () => ({
