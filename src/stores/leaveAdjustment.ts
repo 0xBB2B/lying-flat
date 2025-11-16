@@ -30,7 +30,9 @@ export const useLeaveAdjustmentStore = defineStore('leaveAdjustment', () => {
    */
   const getRecentAdjustments = computed(() => {
     return (limit: number = 10) =>
-      [...adjustments.value].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).slice(0, limit)
+      [...adjustments.value]
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, limit)
   })
 
   // Actions
@@ -203,8 +205,6 @@ export const useLeaveAdjustmentStore = defineStore('leaveAdjustment', () => {
     error.value = null
 
     try {
-      console.log(`[deleteAdjustment] 尝试删除调整记录 ${id}`)
-
       const index = adjustments.value.findIndex((a) => a.id === id)
       if (index === -1) {
         throw new Error(`调整记录 ID ${id} 不存在`)
@@ -215,33 +215,23 @@ export const useLeaveAdjustmentStore = defineStore('leaveAdjustment', () => {
         throw new Error(`调整记录 ID ${id} 不存在`)
       }
 
-      console.log(`[deleteAdjustment] 调整记录详情:`, {
-        id: adjustment.id,
-        type: adjustment.adjustmentType,
-        days: adjustment.days
-      })
-
       const leaveEntitlementStore = useLeaveEntitlementStore()
 
       // 根据调整类型回滚年假额度变化
       if (adjustment.adjustmentType === 'add') {
         // 如果是增加类型,需要删除对应的手动额度记录
-        console.log(`[deleteAdjustment] 这是增加类型,需要删除对应的手动额度`)
         await leaveEntitlementStore.deleteManualEntitlementByAdjustmentId(id)
       } else if (adjustment.adjustmentType === 'deduct') {
         // 如果是扣减类型,由于扣减是通过 calculateBalance 计算实现的,
         // 删除调整记录后自动会重新计算,余额会自动恢复
         // 不需要额外操作
-        console.log(`[deleteAdjustment] 这是扣减类型,不需要删除额度`)
       }
 
       // 删除调整记录
       adjustments.value.splice(index, 1)
-      console.log(`[deleteAdjustment] 已从数组中删除调整记录`)
 
       // 持久化
       await saveAdjustments()
-      console.log(`[deleteAdjustment] 已持久化调整记录`)
     } catch (e) {
       error.value = e instanceof Error ? e.message : '删除调整记录失败'
       console.error('Failed to delete adjustment:', e)

@@ -13,8 +13,15 @@ const entitlementStore = useLeaveEntitlementStore()
 const usageStore = useLeaveUsageStore()
 const adjustmentStore = useLeaveAdjustmentStore()
 
-// 浏览器信息
-const browserInfo = window.navigator.userAgent.split(' ')[0]
+// 浏览器信息 - 使用更可靠的检测方法
+const browserInfo = (() => {
+  const ua = window.navigator.userAgent
+  if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome'
+  if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari'
+  if (ua.includes('Firefox')) return 'Firefox'
+  if (ua.includes('Edg')) return 'Edge'
+  return ua.substring(0, 50) // 降级方案
+})()
 
 // 统计数据计算
 const totalEmployees = computed(() => employeeStore.activeEmployees.length)

@@ -2,12 +2,7 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type {
-  LeaveEntitlement,
-  LeaveBalance,
-  EntitlementSource,
-  EntitlementStatus,
-} from '@/types'
+import type { LeaveEntitlement, LeaveBalance, EntitlementSource, EntitlementStatus } from '@/types'
 import { load, save } from '@/utils/storage'
 import {
   calculateAllLeaveEntitlements,
@@ -30,8 +25,7 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
    * 获取员工的所有年假额度
    */
   const getEntitlementsByEmployeeId = computed(() => {
-    return (employeeId: string) =>
-      entitlements.value.filter((e) => e.employeeId === employeeId)
+    return (employeeId: string) => entitlements.value.filter((e) => e.employeeId === employeeId)
   })
 
   /**
@@ -61,20 +55,10 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
     try {
       const data = load()
       if (data && data.entitlements) {
-        console.log(`[loadEntitlements] 从 localStorage 加载了 ${data.entitlements.length} 个额度`)
-        console.log(`[loadEntitlements] 额度详情:`, data.entitlements.map((e: any) => ({
-          id: e.id,
-          source: e.source,
-          adjustmentId: e.adjustmentId,
-          days: e.days
-        })))
         entitlements.value = data.entitlements
 
         // 先清理孤立的manual额度
-        const cleanedCount = await cleanupOrphanedManualEntitlements()
-        if (cleanedCount > 0) {
-          console.log(`[loadEntitlements] 清理了 ${cleanedCount} 个孤立的manual额度`)
-        }
+        await cleanupOrphanedManualEntitlements()
 
         // 加载后重新计算所有额度的使用情况
         await recalculateAllEntitlements()
@@ -171,34 +155,26 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
     const data = load()
 
     // 1. 实际休假使用的天数
-    const usedFromUsages = data && data.usages
-      ? data.usages
-          .filter((usage: any) => usage.employeeId === employeeId)
-          .reduce((sum: number, usage: any) => sum + (usage.days || 0), 0)
-      : 0
+    const usedFromUsages =
+      data && data.usages
+        ? data.usages
+            .filter((usage: any) => usage.employeeId === employeeId)
+            .reduce((sum: number, usage: any) => sum + (usage.days || 0), 0)
+        : 0
 
     // 2. 手动扣减的天数
-    const deductedFromAdjustments = data && data.adjustments
-      ? data.adjustments
-          .filter((adj: any) => adj.employeeId === employeeId && adj.adjustmentType === 'deduct')
-          .reduce((sum: number, adj: any) => sum + (adj.days || 0), 0)
-      : 0
+    const deductedFromAdjustments =
+      data && data.adjustments
+        ? data.adjustments
+            .filter((adj: any) => adj.employeeId === employeeId && adj.adjustmentType === 'deduct')
+            .reduce((sum: number, adj: any) => sum + (adj.days || 0), 0)
+        : 0
 
     // 总已使用 = 实际休假 + 手动扣减
     const actualUsedDays = usedFromUsages + deductedFromAdjustments
 
     // 剩余天数 = 总额度 - 实际已使用
     const remainingDays = totalEntitlement - actualUsedDays
-
-    // 调试日志
-    console.log(`[calculateBalance] 员工 ${employeeId}:`)
-    console.log(`  - 有效额度数量: ${activeEnts.length}`)
-    console.log(`  - 额度明细:`, activeEnts.map(e => `${e.source}:${e.days}天(已用${e.usedDays})`))
-    console.log(`  - 总额度: ${totalEntitlement}`)
-    console.log(`  - 实际休假使用: ${usedFromUsages}`)
-    console.log(`  - 手动扣减: ${deductedFromAdjustments}`)
-    console.log(`  - 总已使用: ${actualUsedDays}`)
-    console.log(`  - 剩余: ${remainingDays}`)
 
     // 找出即将过期的额度 (30天内)
     const thirtyDaysLater = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000)
@@ -403,19 +379,9 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
     error.value = null
 
     try {
-      console.log(`[deleteManualEntitlement] 尝试删除调整记录 ${adjustmentId} 对应的额度`)
-      console.log(`[deleteManualEntitlement] 当前所有额度:`, entitlements.value.map(e => ({
-        id: e.id,
-        source: e.source,
-        adjustmentId: e.adjustmentId,
-        days: e.days
-      })))
-
       const index = entitlements.value.findIndex(
-        (e) => e.source === 'manual' && e.adjustmentId === adjustmentId
+        (e) => e.source === 'manual' && e.adjustmentId === adjustmentId,
       )
-
-      console.log(`[deleteManualEntitlement] 找到的索引: ${index}`)
 
       if (index === -1) {
         throw new Error(`未找到调整记录 ${adjustmentId} 对应的年假额度`)
@@ -423,27 +389,19 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
 
       // 检查该额度是否已被使用
       const entitlement = entitlements.value[index]
-      console.log(`[deleteManualEntitlement] 要删除的额度:`, {
-        id: entitlement?.id,
-        days: entitlement?.days,
-        usedDays: entitlement?.usedDays
-      })
 
       if (entitlement && entitlement.usedDays > 0) {
         throw new Error(
-          `该调整记录对应的年假额度已被使用 ${entitlement.usedDays} 天，无法删除。请先删除相关的休假使用记录。`
+          `该调整记录对应的年假额度已被使用 ${entitlement.usedDays} 天，无法删除。请先删除相关的休假使用记录。`,
         )
       }
 
       // 删除额度
       entitlements.value.splice(index, 1)
-      console.log(`[deleteManualEntitlement] 删除后剩余额度数量: ${entitlements.value.length}`)
 
       // 持久化并重新计算
       await saveEntitlements()
-      console.log(`[deleteManualEntitlement] 已持久化`)
       await recalculateAllEntitlements()
-      console.log(`[deleteManualEntitlement] 已重新计算`)
     } catch (e) {
       error.value = e instanceof Error ? e.message : '删除年假额度失败'
       console.error('Failed to delete manual entitlement:', e)
@@ -507,30 +465,22 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
       if (!data) return 0
 
       // 获取所有调整记录的ID
-      const adjustmentIds = new Set(
-        (data.adjustments || []).map((adj: any) => adj.id)
-      )
+      const adjustmentIds = new Set((data.adjustments || []).map((adj: any) => adj.id))
 
       // 找出所有孤立的manual额度
       const orphaned = entitlements.value.filter(
-        (e) => e.source === 'manual' && e.adjustmentId && !adjustmentIds.has(e.adjustmentId)
+        (e) => e.source === 'manual' && e.adjustmentId && !adjustmentIds.has(e.adjustmentId),
       )
-
-      console.log(`[cleanupOrphaned] 找到 ${orphaned.length} 个孤立的manual额度`)
-      orphaned.forEach(e => {
-        console.log(`  - ${e.id}: adjustmentId=${e.adjustmentId}, days=${e.days}`)
-      })
 
       if (orphaned.length === 0) return 0
 
       // 删除孤立的额度
       entitlements.value = entitlements.value.filter(
-        (e) => !(e.source === 'manual' && e.adjustmentId && !adjustmentIds.has(e.adjustmentId))
+        (e) => !(e.source === 'manual' && e.adjustmentId && !adjustmentIds.has(e.adjustmentId)),
       )
 
       // 持久化
       await saveEntitlements()
-      console.log(`[cleanupOrphaned] 已删除 ${orphaned.length} 个孤立额度并持久化`)
 
       return orphaned.length
     } catch (e) {
