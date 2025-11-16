@@ -26,7 +26,7 @@ vi.mock('@/utils/validation', () => ({
 }))
 
 describe('EmployeeForm.vue', () => {
-  let wrapper: VueWrapper<any>
+  let wrapper: VueWrapper
 
   beforeEach(() => {
     setActivePinia(createPinia())

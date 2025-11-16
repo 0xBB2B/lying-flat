@@ -4,7 +4,6 @@ import { mount } from '@vue/test-utils'
 import CalendarView from '@/components/calendar/CalendarView.vue'
 import CalendarDay from '@/components/calendar/CalendarDay.vue'
 import type { LeaveUsage } from '@/types'
-import { addMonths, subMonths } from 'date-fns'
 
 // Mock useResponsive composable
 vi.mock('@/composables/useResponsive', () => ({

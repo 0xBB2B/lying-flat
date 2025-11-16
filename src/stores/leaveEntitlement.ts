@@ -6,7 +6,6 @@ import type { LeaveEntitlement, LeaveBalance, EntitlementSource, EntitlementStat
 import { load, save } from '@/utils/storage'
 import {
   calculateAllLeaveEntitlements,
-  calculateExpiryDate,
   isLeaveExpired,
   calculateNextLeaveGrantDate,
   getAnnualLeaveDaysByGrantNumber,
@@ -158,16 +157,19 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
     const usedFromUsages =
       data && data.usages
         ? data.usages
-            .filter((usage: any) => usage.employeeId === employeeId)
-            .reduce((sum: number, usage: any) => sum + (usage.days || 0), 0)
+            .filter((usage: { employeeId: string }) => usage.employeeId === employeeId)
+            .reduce((sum: number, usage: { days?: number }) => sum + (usage.days || 0), 0)
         : 0
 
     // 2. 手动扣减的天数
     const deductedFromAdjustments =
       data && data.adjustments
         ? data.adjustments
-            .filter((adj: any) => adj.employeeId === employeeId && adj.adjustmentType === 'deduct')
-            .reduce((sum: number, adj: any) => sum + (adj.days || 0), 0)
+            .filter(
+              (adj: { employeeId: string; adjustmentType: string }) =>
+                adj.employeeId === employeeId && adj.adjustmentType === 'deduct',
+            )
+            .reduce((sum: number, adj: { days?: number }) => sum + (adj.days || 0), 0)
         : 0
 
     // 总已使用 = 实际休假 + 手动扣减
@@ -326,7 +328,7 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
       }
 
       // 按员工分组处理使用记录
-      const usagesByEmployee = new Map<string, any[]>()
+      const usagesByEmployee = new Map<string, Array<{ employeeId: string; days?: number }>>()
       for (const usage of data.usages) {
         if (!usagesByEmployee.has(usage.employeeId)) {
           usagesByEmployee.set(usage.employeeId, [])
@@ -348,7 +350,10 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
           })
 
         // 计算该员工的总使用天数
-        const totalUsedDays = usages.reduce((sum: number, u: any) => sum + (u.days || 0), 0)
+        const totalUsedDays = usages.reduce(
+          (sum: number, u: { days?: number }) => sum + (u.days || 0),
+          0,
+        )
 
         // 按FIFO原则分配使用天数到各个额度
         let remainingToAllocate = totalUsedDays
@@ -438,12 +443,12 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
     }
 
     return data.usages
-      .filter((usage: any) => {
+      .filter((usage: { employeeId: string; date: string | Date }) => {
         if (usage.employeeId !== employeeId) return false
         const usageDate = new Date(usage.date)
         return usageDate.getFullYear() === year
       })
-      .reduce((sum: number, usage: any) => sum + (usage.days || 0), 0)
+      .reduce((sum: number, usage: { days?: number }) => sum + (usage.days || 0), 0)
   }
 
   /**
@@ -465,7 +470,7 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
       if (!data) return 0
 
       // 获取所有调整记录的ID
-      const adjustmentIds = new Set((data.adjustments || []).map((adj: any) => adj.id))
+      const adjustmentIds = new Set((data.adjustments || []).map((adj: { id: string }) => adj.id))
 
       // 找出所有孤立的manual额度
       const orphaned = entitlements.value.filter(

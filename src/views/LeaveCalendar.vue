@@ -4,7 +4,6 @@ import { ref, computed, onMounted } from 'vue'
 import { useEmployeeStore } from '@/stores/employee'
 import { useLeaveUsageStore } from '@/stores/leaveUsage'
 import CalendarView from '@/components/calendar/CalendarView.vue'
-import type { LeaveUsage } from '@/types'
 
 // Stores
 const employeeStore = useEmployeeStore()
@@ -19,21 +18,21 @@ const selectedDate = ref<Date | null>(null)
 
 // Computed
 const activeEmployees = computed(() =>
-  employeeStore.employees.filter(emp => emp.status === 'active')
+  employeeStore.employees.filter((emp) => emp.status === 'active'),
 )
 
 const filteredUsages = computed(() => {
   if (selectedEmployeeId.value === 'all') {
     return usageStore.usages
   }
-  return usageStore.usages.filter(usage => usage.employeeId === selectedEmployeeId.value)
+  return usageStore.usages.filter((usage) => usage.employeeId === selectedEmployeeId.value)
 })
 
 const selectedDayUsages = computed(() => {
   if (!selectedDate.value) return []
 
   const dateStr = selectedDate.value.toISOString().split('T')[0]
-  return filteredUsages.value.filter(usage => {
+  return filteredUsages.value.filter((usage) => {
     const usageStr = usage.date.toISOString().split('T')[0]
     return usageStr === dateStr
   })
@@ -66,7 +65,7 @@ function formatDate(date: Date): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    weekday: 'long'
+    weekday: 'long',
   })
 }
 
@@ -87,10 +86,7 @@ function getLeaveTypeLabel(type: string): string {
 onMounted(async () => {
   loading.value = true
   try {
-    await Promise.all([
-      employeeStore.loadEmployees(),
-      usageStore.loadUsages(),
-    ])
+    await Promise.all([employeeStore.loadEmployees(), usageStore.loadUsages()])
   } catch (e) {
     console.error('Failed to load data:', e)
   } finally {
@@ -102,10 +98,11 @@ onMounted(async () => {
 <template>
   <div class="leave-calendar bg-gray-50 dark:bg-gray-900 py-3 md:py-4">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-6">
-
       <!-- Loading State -->
       <div v-if="loading" class="text-center py-12">
-        <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div
+          class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+        ></div>
         <p class="mt-4 text-gray-600 dark:text-gray-400">加载中...</p>
       </div>
 
@@ -125,19 +122,10 @@ onMounted(async () => {
               <select
                 id="employee-filter"
                 v-model="selectedEmployeeId"
-                class="
-                  w-full px-3 md:px-4 py-2 border border-gray-300 dark:border-gray-600
-                  rounded-md bg-white dark:bg-gray-700
-                  text-sm md:text-base text-gray-900 dark:text-gray-100
-                  focus:outline-none focus:ring-2 focus:ring-blue-500
-                "
+                class="w-full px-3 md:px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-sm md:text-base text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="all">全部员工</option>
-                <option
-                  v-for="employee in activeEmployees"
-                  :key="employee.id"
-                  :value="employee.id"
-                >
+                <option v-for="employee in activeEmployees" :key="employee.id" :value="employee.id">
                   {{ employee.name }}
                 </option>
               </select>
@@ -149,17 +137,13 @@ onMounted(async () => {
                 <div class="text-xl md:text-2xl font-bold text-blue-600 dark:text-blue-400">
                   {{ totalUsagesInMonth }}
                 </div>
-                <div class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                  本月休假记录
-                </div>
+                <div class="text-xs md:text-sm text-gray-600 dark:text-gray-400">本月休假记录</div>
               </div>
               <div class="text-center">
                 <div class="text-xl md:text-2xl font-bold text-green-600 dark:text-green-400">
                   {{ activeEmployees.length }}
                 </div>
-                <div class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-                  在职员工
-                </div>
+                <div class="text-xs md:text-sm text-gray-600 dark:text-gray-400">在职员工</div>
               </div>
             </div>
           </div>
@@ -182,12 +166,7 @@ onMounted(async () => {
       @click.self="closeDayDetail"
     >
       <div
-        class="
-          bg-white dark:bg-gray-800
-          rounded-lg shadow-xl
-          max-w-2xl w-full max-h-[85vh] md:max-h-[80vh] overflow-y-auto
-          p-4 md:p-6
-        "
+        class="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-2xl w-full max-h-[85vh] md:max-h-[80vh] overflow-y-auto p-4 md:p-6"
       >
         <!-- Modal Header -->
         <div class="flex items-start justify-between mb-4 md:mb-6">
@@ -201,12 +180,14 @@ onMounted(async () => {
           </div>
           <button
             @click="closeDayDetail"
-            class="
-              p-1.5 md:p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200
-              transition-colors
-            "
+            class="p-1.5 md:p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
           >
-            <svg class="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg
+              class="w-5 h-5 md:w-6 md:h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
               <path
                 stroke-linecap="round"
                 stroke-linejoin="round"
@@ -222,12 +203,7 @@ onMounted(async () => {
           <div
             v-for="usage in selectedDayUsages"
             :key="usage.id"
-            class="
-              border border-gray-200 dark:border-gray-700
-              rounded-lg p-3 md:p-4
-              hover:bg-gray-50 dark:hover:bg-gray-700/50
-              transition-colors
-            "
+            class="border border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           >
             <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-2 mb-2">
               <div>
@@ -274,9 +250,7 @@ onMounted(async () => {
               d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
             />
           </svg>
-          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            这一天没有休假记录
-          </p>
+          <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">这一天没有休假记录</p>
         </div>
       </div>
     </div>
