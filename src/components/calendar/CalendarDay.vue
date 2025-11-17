@@ -1,7 +1,7 @@
 <!-- T046: CalendarDay 组件 - 日历日期格子 -->
 <script setup lang="ts">
 import { computed } from 'vue'
-import { format, isToday as checkIsToday } from 'date-fns'
+import { format, isToday as checkIsToday, isWeekend as checkIsWeekend } from 'date-fns'
 import type { LeaveUsage, LeaveType } from '@/types'
 import { useResponsive } from '@/composables/useResponsive'
 
@@ -13,6 +13,8 @@ const props = defineProps<{
   date: Date
   isCurrentMonth: boolean
   usages: LeaveUsage[]
+  isHoliday: boolean
+  holidayName?: string | null
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +27,8 @@ const dayNumber = computed(() => format(props.date, 'd'))
 const isToday = computed(() => {
   return checkIsToday(props.date)
 })
+
+const isWeekend = computed(() => checkIsWeekend(props.date))
 
 const hasUsages = computed(() => props.usages.length > 0)
 
@@ -59,7 +63,21 @@ const dayClasses = computed(() => {
   ]
 
   if (!props.isCurrentMonth) {
-    classes.push('bg-gray-50 dark:bg-gray-900/30 text-gray-400 dark:text-gray-600')
+    classes.push('bg-gray-50 dark:bg-gray-900/30')
+    // Only one text color class: holiday takes precedence over weekend
+    if (props.isHoliday) {
+      classes.push('text-amber-500 dark:text-amber-400')
+    } else if (isWeekend.value) {
+      classes.push('text-rose-400 dark:text-rose-500')
+    } else {
+      classes.push('text-gray-400 dark:text-gray-600')
+    }
+  } else if (props.isHoliday) {
+    classes.push('bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100')
+    classes.push('hover:bg-amber-100 dark:hover:bg-amber-900/30')
+  } else if (isWeekend.value) {
+    classes.push('bg-rose-50 dark:bg-rose-900/20 text-rose-900 dark:text-rose-100')
+    classes.push('hover:bg-rose-100 dark:hover:bg-rose-900/30')
   } else {
     classes.push('bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100')
     classes.push('hover:bg-gray-50 dark:hover:bg-gray-700/50')
@@ -88,6 +106,8 @@ const dayClasses = computed(() => {
           isMobile ? 'text-xs' : 'text-sm',
           'font-medium',
           {
+            'text-amber-700 dark:text-amber-200': !isToday && props.isHoliday,
+            'text-rose-600 dark:text-rose-300': !isToday && isWeekend && !props.isHoliday,
             'bg-blue-500 text-white rounded-full flex items-center justify-center':
               isToday,
             'w-5 h-5 text-[10px]': isToday && isMobile,
@@ -97,6 +117,23 @@ const dayClasses = computed(() => {
       >
         {{ dayNumber }}
       </span>
+    </div>
+
+    <!-- Holiday label -->
+    <div
+      v-if="props.holidayName"
+      :class="[
+        isMobile ? 'text-[10px] px-1 py-0.5' : 'text-xs px-2 py-1',
+        'mb-0.5',
+        'rounded bg-amber-100 text-amber-800',
+        'dark:bg-amber-900/30 dark:text-amber-200',
+        'truncate'
+      ]"
+      :title="props.holidayName"
+      :aria-label="props.holidayName"
+      tabindex="0"
+    >
+      {{ props.holidayName }}
     </div>
 
     <!-- Usage Indicators -->

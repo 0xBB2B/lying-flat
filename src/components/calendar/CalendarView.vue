@@ -13,6 +13,7 @@ const { isMobile } = useResponsive()
 const props = defineProps<{
   usages: LeaveUsage[]
   currentMonth?: Date
+  holidays?: Record<string, string> // yyyy-MM-dd => 节假日名称
 }>()
 
 const emit = defineEmits<{
@@ -49,6 +50,11 @@ const getUsagesForDay = (day: Date) => {
     const usageStr = format(usage.date, 'yyyy-MM-dd')
     return usageStr === dayStr
   })
+}
+
+const getHolidayName = (day: Date) => {
+  const dayStr = format(day, 'yyyy-MM-dd')
+  return (props.holidays || {})[dayStr]
 }
 
 // Watch for external month changes
@@ -131,9 +137,14 @@ function handleDayClick(day: Date) {
     <!-- Week Day Headers -->
     <div class="calendar-grid grid grid-cols-7 gap-0.5 md:gap-1 mb-1">
       <div
-        v-for="day in ['日', '一', '二', '三', '四', '五', '六']"
+        v-for="(day, index) in ['日', '一', '二', '三', '四', '五', '六']"
         :key="day"
-        class="text-center text-xs md:text-sm font-medium text-gray-500 dark:text-gray-400 py-1 md:py-2"
+        :class="[
+          'text-center text-xs md:text-sm font-medium py-1 md:py-2',
+          index === 0 || index === 6
+            ? 'text-rose-600 dark:text-rose-300'
+            : 'text-gray-500 dark:text-gray-400'
+        ]"
       >
         {{ day }}
       </div>
@@ -147,6 +158,8 @@ function handleDayClick(day: Date) {
         :date="day"
         :is-current-month="isSameMonth(day, displayMonth)"
         :usages="getUsagesForDay(day)"
+        :is-holiday="Boolean(getHolidayName(day))"
+        :holiday-name="getHolidayName(day)"
         @click="handleDayClick(day)"
       />
     </div>
@@ -165,6 +178,10 @@ function handleDayClick(day: Date) {
         <div class="flex items-center gap-1.5 md:gap-2">
           <div class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-indigo-500"></div>
           <span class="text-gray-600 dark:text-gray-400">下午休假</span>
+        </div>
+        <div class="flex items-center gap-1.5 md:gap-2">
+          <div class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-amber-500"></div>
+          <span class="text-gray-600 dark:text-gray-400">节假日</span>
         </div>
       </div>
     </div>

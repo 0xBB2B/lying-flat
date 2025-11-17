@@ -3,7 +3,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useEmployeeStore } from '@/stores/employee'
 import { useLeaveUsageStore } from '@/stores/leaveUsage'
-import { LeaveType } from '@/types'
+import { LeaveType, type PublicHoliday } from '@/types'
 import CalendarView from '@/components/calendar/CalendarView.vue'
 
 // Stores
@@ -25,6 +25,10 @@ const deleteUsageError = ref<string | null>(null)
 const newUsageEmployeeId = ref<string>('')
 const newUsageType = ref<LeaveType>(LeaveType.FULL_DAY)
 const newUsageNotes = ref('')
+const holidays = ref<PublicHoliday[]>([])
+const holidayLoading = ref(false)
+const holidayError = ref<string | null>(null)
+const fetchedHolidayYears = ref(new Set<number>())
 
 // Computed
 const activeEmployees = computed(() =>
@@ -49,6 +53,12 @@ const selectedDayUsages = computed(() => {
 })
 
 const totalUsagesInMonth = computed(() => filteredUsages.value.length)
+const holidayMap = computed(() =>
+  holidays.value.reduce((acc, cur) => {
+    acc[cur.date] = cur.localName || cur.name
+    return acc
+  }, {} as Record<string, string>),
+)
 const employeeOptions = computed(() => {
   if (selectedEmployeeId.value === 'all') {
     return activeEmployees.value
@@ -64,6 +74,8 @@ const canAddUsage = computed(() => activeEmployees.value.length > 0)
 // Methods
 function handleMonthChange(newMonth: Date) {
   currentMonth.value = newMonth
+  const year = newMonth.getFullYear()
+  fetchPublicHolidaysForYears([year - 1, year, year + 1])
 }
 
 function handleDayClick(date: Date) {
@@ -196,11 +208,54 @@ function getLeaveTypeLabel(type: string): string {
   }
 }
 
+async function fetchHolidayByYear(year: number) {
+  if (fetchedHolidayYears.value.has(year)) return
+
+  try {
+    const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/JP`)
+    if (!response.ok) {
+      throw new Error(`获取节假日失败 (${response.status})`)
+    }
+    const data: PublicHoliday[] = await response.json()
+    holidays.value = [
+      ...holidays.value.filter((item) => new Date(item.date).getFullYear() !== year),
+      ...data,
+    ]
+    fetchedHolidayYears.value.add(year)
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `获取节假日失败: ${error.message}`
+        : '获取节假日失败: 网络错误'
+    )
+  }
+}
+
+async function fetchPublicHolidaysForYears(years: number[]) {
+  const targets = years.filter((year) => !fetchedHolidayYears.value.has(year))
+  if (!targets.length) return
+
+  holidayLoading.value = true
+  holidayError.value = null
+
+  const results = await Promise.allSettled(targets.map(fetchHolidayByYear))
+  const rejected = results.find((r) => r.status === 'rejected') as PromiseRejectedResult | undefined
+  if (rejected) {
+    holidayError.value =
+      rejected.reason instanceof Error ? rejected.reason.message : '加载日本节假日失败'
+    console.error('Failed to load public holidays:', rejected.reason)
+  }
+
+  holidayLoading.value = false
+}
+
 // Lifecycle
 onMounted(async () => {
   loading.value = true
   try {
     await Promise.all([employeeStore.loadEmployees(), usageStore.loadUsages()])
+    const year = currentMonth.value.getFullYear()
+    await fetchPublicHolidaysForYears([year - 1, year, year + 1])
     syncDefaultEmployee()
   } catch (e) {
     console.error('Failed to load data:', e)
@@ -279,9 +334,16 @@ watch(
         <CalendarView
           :usages="filteredUsages"
           :current-month="currentMonth"
+          :holidays="holidayMap"
           @month-change="handleMonthChange"
           @day-click="handleDayClick"
         />
+        <p v-if="holidayLoading" class="text-sm text-gray-600 dark:text-gray-400">
+          正在加载节假日...
+        </p>
+        <p v-if="holidayError" class="text-sm text-red-500 dark:text-red-400">
+          {{ holidayError }}
+        </p>
       </div>
     </div>
 
