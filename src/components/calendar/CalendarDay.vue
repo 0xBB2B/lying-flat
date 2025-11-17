@@ -29,8 +29,6 @@ const isToday = computed(() => {
 })
 
 const isWeekend = computed(() => checkIsWeekend(props.date))
-const isHoliday = computed(() => props.isHoliday)
-const holidayLabel = computed(() => props.holidayName || '')
 
 const hasUsages = computed(() => props.usages.length > 0)
 
@@ -65,13 +63,16 @@ const dayClasses = computed(() => {
   ]
 
   if (!props.isCurrentMonth) {
-    classes.push('bg-gray-50 dark:bg-gray-900/30 text-gray-400 dark:text-gray-600')
-    if (isHoliday.value) {
+    classes.push('bg-gray-50 dark:bg-gray-900/30')
+    // Only one text color class: holiday takes precedence over weekend
+    if (props.isHoliday) {
       classes.push('text-amber-500 dark:text-amber-400')
     } else if (isWeekend.value) {
       classes.push('text-rose-400 dark:text-rose-500')
+    } else {
+      classes.push('text-gray-400 dark:text-gray-600')
     }
-  } else if (isHoliday.value) {
+  } else if (props.isHoliday) {
     classes.push('bg-amber-50 dark:bg-amber-900/20 text-amber-900 dark:text-amber-100')
     classes.push('hover:bg-amber-100 dark:hover:bg-amber-900/30')
   } else if (isWeekend.value) {
@@ -105,8 +106,8 @@ const dayClasses = computed(() => {
           isMobile ? 'text-xs' : 'text-sm',
           'font-medium',
           {
-            'text-amber-700 dark:text-amber-200': !isToday && isHoliday,
-            'text-rose-600 dark:text-rose-300': !isToday && isWeekend && !isHoliday,
+            'text-amber-700 dark:text-amber-200': !isToday && props.isHoliday,
+            'text-rose-600 dark:text-rose-300': !isToday && isWeekend && !props.isHoliday,
             'bg-blue-500 text-white rounded-full flex items-center justify-center':
               isToday,
             'w-5 h-5 text-[10px]': isToday && isMobile,
@@ -120,7 +121,7 @@ const dayClasses = computed(() => {
 
     <!-- Holiday label -->
     <div
-      v-if="holidayLabel"
+      v-if="props.holidayName"
       :class="[
         isMobile ? 'text-[10px] px-1 py-0.5' : 'text-xs px-2 py-1',
         'mb-0.5',
@@ -128,9 +129,11 @@ const dayClasses = computed(() => {
         'dark:bg-amber-900/30 dark:text-amber-200',
         'truncate'
       ]"
-      :title="holidayLabel"
+      :title="props.holidayName"
+      :aria-label="props.holidayName"
+      tabindex="0"
     >
-      {{ holidayLabel }}
+      {{ props.holidayName }}
     </div>
 
     <!-- Usage Indicators -->
