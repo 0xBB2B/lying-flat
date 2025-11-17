@@ -6,11 +6,13 @@ import { useLeaveReminder } from '@/composables/useLeaveReminder'
 import { useEmployeeStore } from '@/stores/employee'
 import { useLeaveEntitlementStore } from '@/stores/leaveEntitlement'
 import { useLeaveUsageStore } from '@/stores/leaveUsage'
+import { useLeaveAdjustmentStore } from '@/stores/leaveAdjustment'
 
 const { checkReminders } = useLeaveReminder()
 const employeeStore = useEmployeeStore()
 const leaveEntitlementStore = useLeaveEntitlementStore()
 const leaveUsageStore = useLeaveUsageStore()
+const leaveAdjustmentStore = useLeaveAdjustmentStore()
 
 // 应用启动时加载数据并检查提醒
 onMounted(async () => {
@@ -20,6 +22,7 @@ onMounted(async () => {
       employeeStore.loadEmployees(),
       leaveEntitlementStore.loadEntitlements(),
       leaveUsageStore.loadUsages(),
+      leaveAdjustmentStore.loadAdjustments(),
     ])
 
     // 检查提醒
