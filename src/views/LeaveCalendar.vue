@@ -28,7 +28,7 @@ const newUsageNotes = ref('')
 const holidays = ref<PublicHoliday[]>([])
 const holidayLoading = ref(false)
 const holidayError = ref<string | null>(null)
-const fetchedHolidayYears = new Set<number>()
+const fetchedHolidayYears = ref(new Set<number>())
 
 // Computed
 const activeEmployees = computed(() =>
@@ -209,22 +209,30 @@ function getLeaveTypeLabel(type: string): string {
 }
 
 async function fetchHolidayByYear(year: number) {
-  if (fetchedHolidayYears.has(year)) return
+  if (fetchedHolidayYears.value.has(year)) return
 
-  const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/JP`)
-  if (!response.ok) {
-    throw new Error(`获取节假日失败 (${response.status})`)
+  try {
+    const response = await fetch(`https://date.nager.at/api/v3/PublicHolidays/${year}/JP`)
+    if (!response.ok) {
+      throw new Error(`获取节假日失败 (${response.status})`)
+    }
+    const data: PublicHoliday[] = await response.json()
+    holidays.value = [
+      ...holidays.value.filter((item) => new Date(item.date).getFullYear() !== year),
+      ...data,
+    ]
+    fetchedHolidayYears.value.add(year)
+  } catch (error) {
+    throw new Error(
+      error instanceof Error
+        ? `获取节假日失败: ${error.message}`
+        : '获取节假日失败: 网络错误'
+    )
   }
-  const data: PublicHoliday[] = await response.json()
-  holidays.value = [
-    ...holidays.value.filter((item) => new Date(item.date).getFullYear() !== year),
-    ...data,
-  ]
-  fetchedHolidayYears.add(year)
 }
 
 async function fetchPublicHolidaysForYears(years: number[]) {
-  const targets = years.filter((year) => !fetchedHolidayYears.has(year))
+  const targets = years.filter((year) => !fetchedHolidayYears.value.has(year))
   if (!targets.length) return
 
   holidayLoading.value = true
@@ -330,6 +338,9 @@ watch(
           @month-change="handleMonthChange"
           @day-click="handleDayClick"
         />
+        <p v-if="holidayLoading" class="text-sm text-gray-600 dark:text-gray-400">
+          正在加载节假日...
+        </p>
         <p v-if="holidayError" class="text-sm text-red-500 dark:text-red-400">
           {{ holidayError }}
         </p>

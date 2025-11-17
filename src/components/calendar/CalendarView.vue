@@ -43,8 +43,6 @@ const monthLabel = computed(() => {
     : format(displayMonth.value, 'yyyy年MM月')
 })
 
-const holidayMap = computed(() => props.holidays || {})
-
 // Get usages for a specific day
 const getUsagesForDay = (day: Date) => {
   const dayStr = format(day, 'yyyy-MM-dd')
@@ -56,7 +54,7 @@ const getUsagesForDay = (day: Date) => {
 
 const getHolidayName = (day: Date) => {
   const dayStr = format(day, 'yyyy-MM-dd')
-  return holidayMap.value[dayStr]
+  return (props.holidays || {})[dayStr]
 }
 
 // Watch for external month changes
