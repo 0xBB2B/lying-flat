@@ -16,7 +16,7 @@ const selectedEmployeeId = ref<string>('all')
 const currentMonth = ref<Date>(new Date())
 const showDayDetail = ref(false)
 const selectedDate = ref<Date | null>(null)
-const isAddingUsage = ref(true)
+const isAddingUsage = ref(false)
 const addUsageLoading = ref(false)
 const addUsageError = ref<string | null>(null)
 const addUsageSuccess = ref<string | null>(null)
@@ -73,7 +73,6 @@ function handleDayClick(date: Date) {
 function closeDayDetail() {
   showDayDetail.value = false
   selectedDate.value = null
-  isAddingUsage.value = true
   resetAddUsageState()
 }
 
@@ -140,8 +139,8 @@ async function submitDayUsage() {
       newUsageNotes.value.trim() || undefined,
     )
 
-    addUsageSuccess.value = '已记录休假'
     resetAddUsageState()
+    addUsageSuccess.value = '已记录休假'
   } catch (error) {
     addUsageError.value =
       error instanceof Error ? error.message : '记录休假时出现问题,请稍后再试'
@@ -346,7 +345,7 @@ watch(
                 :disabled="addUsageLoading || employeeSelectDisabled"
                 class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
               >
-                <option value="" disabled :selected="!newUsageEmployeeId">请选择员工</option>
+                <option value="" disabled>请选择员工</option>
                 <option
                   v-for="employee in employeeOptions"
                   :key="employee.id"
@@ -445,10 +444,10 @@ watch(
               ></textarea>
             </div>
 
-            <div v-if="addUsageError" class="text-xs text-red-600 dark:text-red-400">
+            <div v-if="addUsageError" class="text-xs text-red-600 dark:text-red-400" role="alert">
               {{ addUsageError }}
             </div>
-            <div v-if="addUsageSuccess" class="text-xs text-green-600 dark:text-green-400">
+            <div v-if="addUsageSuccess" class="text-xs text-green-600 dark:text-green-400" role="alert">
               {{ addUsageSuccess }}
             </div>
 
