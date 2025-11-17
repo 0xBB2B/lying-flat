@@ -99,7 +99,7 @@ function syncDefaultEmployee(force = false) {
 
   const exists = employees.some((emp) => emp.id === newUsageEmployeeId.value)
   if (force || !exists) {
-    newUsageEmployeeId.value = employees[0]!.id
+    newUsageEmployeeId.value = employees[0]?.id ?? ''
   }
 }
 
@@ -141,9 +141,7 @@ async function submitDayUsage() {
     )
 
     addUsageSuccess.value = '已记录休假'
-    newUsageNotes.value = ''
-    newUsageType.value = LeaveType.FULL_DAY
-    syncDefaultEmployee()
+    resetAddUsageState()
   } catch (error) {
     addUsageError.value =
       error instanceof Error ? error.message : '记录休假时出现问题,请稍后再试'
@@ -184,6 +182,7 @@ onMounted(async () => {
   loading.value = true
   try {
     await Promise.all([employeeStore.loadEmployees(), usageStore.loadUsages()])
+    syncDefaultEmployee()
   } catch (e) {
     console.error('Failed to load data:', e)
   } finally {
@@ -198,15 +197,6 @@ watch(
       syncDefaultEmployee()
     } else {
       newUsageEmployeeId.value = selectedEmployeeId.value
-    }
-  },
-)
-
-watch(
-  () => employeeOptions.value,
-  () => {
-    if (isAddingUsage.value) {
-      syncDefaultEmployee()
     }
   },
 )
@@ -356,7 +346,7 @@ watch(
                 :disabled="addUsageLoading || employeeSelectDisabled"
                 class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
               >
-                <option v-if="selectedEmployeeId === 'all'" value="">请选择员工</option>
+                <option value="" disabled :selected="!newUsageEmployeeId">请选择员工</option>
                 <option
                   v-for="employee in employeeOptions"
                   :key="employee.id"
@@ -379,6 +369,7 @@ watch(
               </legend>
               <div class="grid grid-cols-3 gap-2 text-xs md:text-sm">
                 <label
+                  for="leave-type-full-day"
                   class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
                   :class="
                     newUsageType === LeaveType.FULL_DAY
@@ -387,6 +378,7 @@ watch(
                   "
                 >
                   <input
+                    id="leave-type-full-day"
                     v-model="newUsageType"
                     :disabled="addUsageLoading"
                     class="text-blue-600 focus:ring-blue-500"
@@ -397,6 +389,7 @@ watch(
                   <span>全天 (1 天)</span>
                 </label>
                 <label
+                  for="leave-type-morning"
                   class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
                   :class="
                     newUsageType === LeaveType.MORNING
@@ -405,6 +398,7 @@ watch(
                   "
                 >
                   <input
+                    id="leave-type-morning"
                     v-model="newUsageType"
                     :disabled="addUsageLoading"
                     class="text-purple-600 focus:ring-purple-500"
@@ -415,6 +409,7 @@ watch(
                   <span>上午 (0.5 天)</span>
                 </label>
                 <label
+                  for="leave-type-afternoon"
                   class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
                   :class="
                     newUsageType === LeaveType.AFTERNOON
@@ -423,6 +418,7 @@ watch(
                   "
                 >
                   <input
+                    id="leave-type-afternoon"
                     v-model="newUsageType"
                     :disabled="addUsageLoading"
                     class="text-indigo-600 focus:ring-indigo-500"
