@@ -120,19 +120,12 @@ export const useLeaveUsageStore = defineStore('leaveUsage', () => {
         throw new Error(`员工 ID ${employeeId} 不存在`)
       }
 
-      // 验证休假日期不能是未来
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
       const usageDate = new Date(date)
       usageDate.setHours(0, 0, 0, 0)
 
-      if (usageDate > today) {
-        throw new Error('休假日期不能晚于今天')
-      }
-
       // 检查是否有重复的休假记录
-      if (hasUsageOnDate.value(employeeId, date, type)) {
-        throw new Error(`${date.toISOString().split('T')[0]} 已有${type === 'full_day' ? '全天' : type === 'morning' ? '上午' : '下午'}休假记录`)
+      if (hasUsageOnDate.value(employeeId, usageDate, type)) {
+        throw new Error(`${usageDate.toISOString().split('T')[0]} 已有${type === 'full_day' ? '全天' : type === 'morning' ? '上午' : '下午'}休假记录`)
       }
 
       // 计算休假天数

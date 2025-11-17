@@ -58,18 +58,6 @@ function validateForm(): boolean {
     isFormValid = false
   }
 
-  // 验证日期不能是未来
-  if (date.value.trim()) {
-    const selectedDate = new Date(date.value + 'T00:00:00')
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-
-    if (selectedDate > today) {
-      dateError.value = '休假日期不能晚于今天'
-      isFormValid = false
-    }
-  }
-
   // 备注长度验证(可选)
   if (notes.value.trim().length > 200) {
     notesError.value = '备注不能超过 200 个字符'
@@ -151,7 +139,6 @@ function handleCancel() {
           v-model="date"
           type="date"
           :disabled="submitting"
-          :max="new Date().toISOString().split('T')[0]"
           class="w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
           :class="{
             'border-red-500': dateError,
@@ -161,7 +148,7 @@ function handleCancel() {
         <p v-if="dateError" class="mt-1 text-sm text-red-600 dark:text-red-400">
           {{ dateError }}
         </p>
-        <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">只能选择今天或之前的日期</p>
+        <p v-else class="mt-1 text-xs text-gray-500 dark:text-gray-400">可记录过去或未来的休假计划</p>
       </div>
 
       <!-- 休假类型 -->

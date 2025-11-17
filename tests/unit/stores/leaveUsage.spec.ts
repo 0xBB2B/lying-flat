@@ -376,15 +376,17 @@ describe('leaveUsageStore', () => {
       expect(usageStore.usages).toHaveLength(0)
     })
 
-    it('休假日期为未来时应该抛出错误', async () => {
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
+    it('应该允许记录未来的休假日期', async () => {
+      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
 
-      await expect(usageStore.recordUsage('emp-1', tomorrow, LeaveType.FULL_DAY)).rejects.toThrow(
-        '休假日期不能晚于今天',
-      )
+      const future = new Date()
+      future.setDate(future.getDate() + 5)
+      future.setHours(0, 0, 0, 0)
 
-      expect(usageStore.usages).toHaveLength(0)
+      await usageStore.recordUsage('emp-1', future, LeaveType.FULL_DAY)
+
+      expect(usageStore.usages).toHaveLength(1)
+      expect(usageStore.usages[0].date.getTime()).toBe(future.getTime())
     })
 
     it('同一天已有全天休假时应该抛出错误', async () => {

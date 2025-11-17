@@ -68,7 +68,7 @@ describe('LeaveUsageForm.vue', () => {
       expect((fullDayRadio.element as HTMLInputElement).checked).toBe(true)
     })
 
-    it('应该显示日期最大值为今天', () => {
+    it('应该提示可记录未来日期', () => {
       const wrapper = mount(LeaveUsageForm, {
         props: {
           employeeId: 'emp-1',
@@ -76,9 +76,7 @@ describe('LeaveUsageForm.vue', () => {
         },
       })
 
-      const dateInput = wrapper.find('input[type="date"]')
-      const today = new Date().toISOString().split('T')[0]
-      expect(dateInput.attributes('max')).toBe(today)
+      expect(wrapper.text()).toContain('可记录过去或未来的休假计划')
     })
   })
 
@@ -97,7 +95,7 @@ describe('LeaveUsageForm.vue', () => {
       expect(wrapper.text()).toContain('请选择休假日期')
     })
 
-    it('日期为未来时应该显示错误', async () => {
+    it('未来日期也应该被接受', async () => {
       const wrapper = mount(LeaveUsageForm, {
         props: {
           employeeId: 'emp-1',
@@ -105,16 +103,20 @@ describe('LeaveUsageForm.vue', () => {
         },
       })
 
-      // 设置明天的日期
-      const tomorrow = new Date()
-      tomorrow.setDate(tomorrow.getDate() + 1)
-      const tomorrowStr = tomorrow.toISOString().split('T')[0]
+      const store = useLeaveUsageStore()
+      vi.spyOn(store, 'recordUsage').mockResolvedValue(undefined)
 
-      await wrapper.find('input[type="date"]').setValue(tomorrowStr)
+      const future = new Date()
+      future.setDate(future.getDate() + 7)
+      const futureStr = future.toISOString().split('T')[0]
+
+      await wrapper.find('input[type="date"]').setValue(futureStr)
       await wrapper.find('form').trigger('submit.prevent')
+      await new Promise((resolve) => setTimeout(resolve, 50))
       await wrapper.vm.$nextTick()
 
-      expect(wrapper.text()).toContain('休假日期不能晚于今天')
+      expect(store.recordUsage).toHaveBeenCalled()
+      expect(wrapper.emitted('success')).toBeTruthy()
     })
 
     it('余额不足时应该显示错误', async () => {
