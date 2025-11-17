@@ -20,6 +20,8 @@ const isAddingUsage = ref(false)
 const addUsageLoading = ref(false)
 const addUsageError = ref<string | null>(null)
 const addUsageSuccess = ref<string | null>(null)
+const deleteUsageLoadingId = ref<string | null>(null)
+const deleteUsageError = ref<string | null>(null)
 const newUsageEmployeeId = ref<string>('')
 const newUsageType = ref<LeaveType>(LeaveType.FULL_DAY)
 const newUsageNotes = ref('')
@@ -143,10 +145,27 @@ async function submitDayUsage() {
 
     resetAddUsageState()
     addUsageSuccess.value = '已记录休假'
+    isAddingUsage.value = false
   } catch (error) {
     addUsageError.value = error instanceof Error ? error.message : '记录休假时出现问题,请稍后再试'
   } finally {
     addUsageLoading.value = false
+  }
+}
+
+async function handleDeleteUsage(usageId: string) {
+  deleteUsageError.value = null
+  const confirmed = window.confirm('确认删除这条休假记录吗?')
+  if (!confirmed) return
+
+  deleteUsageLoadingId.value = usageId
+  try {
+    await usageStore.deleteUsage(usageId)
+  } catch (error) {
+    deleteUsageError.value =
+      error instanceof Error ? error.message : '删除休假记录时出现问题,请稍后再试'
+  } finally {
+    deleteUsageLoadingId.value = null
   }
 }
 
@@ -477,6 +496,10 @@ watch(
           </form>
         </div>
 
+        <div v-if="deleteUsageError" class="mb-3 text-xs md:text-sm text-red-600 dark:text-red-400">
+          {{ deleteUsageError }}
+        </div>
+
         <!-- Usage List -->
         <div v-if="selectedDayUsages.length > 0" class="space-y-2 md:space-y-3">
           <div
@@ -508,8 +531,26 @@ watch(
               </span>
             </div>
 
-            <div v-if="usage.notes" class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
-              <span class="font-medium">备注:</span> {{ usage.notes }}
+            <div class="mt-2 flex items-center gap-2">
+              <div v-if="usage.notes" class="text-xs md:text-sm text-gray-600 dark:text-gray-400">
+                <span class="font-medium">备注:</span> {{ usage.notes }}
+              </div>
+              <button
+                type="button"
+                class="ml-auto inline-flex items-center gap-1 text-xs md:text-sm text-red-600 hover:text-red-700 dark:text-red-300 dark:hover:text-red-200 disabled:opacity-60"
+                :disabled="deleteUsageLoadingId === usage.id"
+                @click="handleDeleteUsage(usage.id)"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M9 7h6m-7 0V5a2 2 0 012-2h2a2 2 0 012 2v2m-7 0h8"
+                  />
+                </svg>
+                {{ deleteUsageLoadingId === usage.id ? '删除中...' : '删除' }}
+              </button>
             </div>
           </div>
         </div>
