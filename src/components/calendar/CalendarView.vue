@@ -1,17 +1,7 @@
 <!-- T045: CalendarView 组件 - 月度日历视图 -->
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import {
-  startOfMonth,
-  endOfMonth,
-  startOfWeek,
-  endOfWeek,
-  eachDayOfInterval,
-  isSameMonth,
-  format,
-  addMonths,
-  subMonths,
-} from 'date-fns'
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, format, addMonths, subMonths } from 'date-fns'
 import CalendarDay from './CalendarDay.vue'
 import type { LeaveUsage } from '@/types'
 import { useResponsive } from '@/composables/useResponsive'
@@ -55,21 +45,18 @@ const monthLabel = computed(() => {
 // Get usages for a specific day
 const getUsagesForDay = (day: Date) => {
   const dayStr = format(day, 'yyyy-MM-dd')
-  return props.usages.filter((usage) => {
+  return props.usages.filter(usage => {
     const usageStr = format(usage.date, 'yyyy-MM-dd')
     return usageStr === dayStr
   })
 }
 
 // Watch for external month changes
-watch(
-  () => props.currentMonth,
-  (newMonth) => {
-    if (newMonth) {
-      displayMonth.value = newMonth
-    }
-  },
-)
+watch(() => props.currentMonth, (newMonth) => {
+  if (newMonth) {
+    displayMonth.value = newMonth
+  }
+})
 
 // Methods
 function prevMonth() {
@@ -90,15 +77,6 @@ function goToToday() {
 function handleDayClick(day: Date) {
   emit('dayClick', day)
 }
-
-// Expose for testing
-defineExpose({
-  displayMonth,
-  prevMonth,
-  nextMonth,
-  goToToday,
-  handleDayClick,
-})
 </script>
 
 <template>
@@ -107,16 +85,15 @@ defineExpose({
     <div class="calendar-header flex items-center justify-between mb-2 md:mb-4">
       <button
         @click="prevMonth"
-        class="p-1.5 md:p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        class="
+          p-1.5 md:p-2 rounded-md text-gray-600 dark:text-gray-400
+          hover:bg-gray-100 dark:hover:bg-gray-700
+          transition-colors
+        "
         title="上个月"
       >
         <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            d="M15 19l-7-7 7-7"
-          />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
         </svg>
       </button>
 
@@ -126,7 +103,11 @@ defineExpose({
         </h2>
         <button
           @click="goToToday"
-          class="px-2 py-0.5 md:px-3 md:py-1 text-xs md:text-sm bg-blue-100 text-blue-700 rounded-md hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50 transition-colors"
+          class="
+            px-2 py-0.5 md:px-3 md:py-1 text-xs md:text-sm bg-blue-100 text-blue-700 rounded-md
+            hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/50
+            transition-colors
+          "
         >
           今天
         </button>
@@ -134,7 +115,11 @@ defineExpose({
 
       <button
         @click="nextMonth"
-        class="p-1.5 md:p-2 rounded-md text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        class="
+          p-1.5 md:p-2 rounded-md text-gray-600 dark:text-gray-400
+          hover:bg-gray-100 dark:hover:bg-gray-700
+          transition-colors
+        "
         title="下个月"
       >
         <svg class="w-4 h-4 md:w-5 md:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -167,9 +152,7 @@ defineExpose({
     </div>
 
     <!-- Legend -->
-    <div
-      class="calendar-legend mt-3 md:mt-4 pt-2 md:pt-3 border-t border-gray-200 dark:border-gray-700"
-    >
+    <div class="calendar-legend mt-3 md:mt-4 pt-2 md:pt-3 border-t border-gray-200 dark:border-gray-700">
       <div class="flex flex-wrap gap-2 md:gap-4 text-xs md:text-sm">
         <div class="flex items-center gap-1.5 md:gap-2">
           <div class="w-2 h-2 md:w-3 md:h-3 rounded-full bg-blue-500"></div>

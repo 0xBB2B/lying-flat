@@ -134,22 +134,6 @@ function handleCancel() {
   error.value = null
   emit('cancel')
 }
-
-// Expose for testing
-defineExpose({
-  date,
-  leaveType,
-  notes,
-  submitting,
-  error,
-  dateError,
-  notesError,
-  isValid,
-  previewBalance,
-  previewBalanceValid,
-  handleSubmit,
-  handleCancel,
-})
 </script>
 
 <template>
