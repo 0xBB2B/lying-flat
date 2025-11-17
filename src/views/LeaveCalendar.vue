@@ -1,8 +1,9 @@
 <!-- T048: LeaveCalendar 视图 - 年假日历页面 -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useEmployeeStore } from '@/stores/employee'
 import { useLeaveUsageStore } from '@/stores/leaveUsage'
+import { LeaveType } from '@/types'
 import CalendarView from '@/components/calendar/CalendarView.vue'
 
 // Stores
@@ -15,6 +16,13 @@ const selectedEmployeeId = ref<string>('all')
 const currentMonth = ref<Date>(new Date())
 const showDayDetail = ref(false)
 const selectedDate = ref<Date | null>(null)
+const isAddingUsage = ref(false)
+const addUsageLoading = ref(false)
+const addUsageError = ref<string | null>(null)
+const addUsageSuccess = ref<string | null>(null)
+const newUsageEmployeeId = ref<string>('')
+const newUsageType = ref<LeaveType>(LeaveType.FULL_DAY)
+const newUsageNotes = ref('')
 
 // Computed
 const activeEmployees = computed(() =>
@@ -39,6 +47,17 @@ const selectedDayUsages = computed(() => {
 })
 
 const totalUsagesInMonth = computed(() => filteredUsages.value.length)
+const employeeOptions = computed(() => {
+  if (selectedEmployeeId.value === 'all') {
+    return activeEmployees.value
+  }
+  const selected = activeEmployees.value.find((emp) => emp.id === selectedEmployeeId.value)
+  return selected ? [selected] : activeEmployees.value
+})
+const employeeSelectDisabled = computed(
+  () => selectedEmployeeId.value !== 'all' && employeeOptions.value.length === 1,
+)
+const canAddUsage = computed(() => activeEmployees.value.length > 0)
 
 // Methods
 function handleMonthChange(newMonth: Date) {
@@ -48,11 +67,87 @@ function handleMonthChange(newMonth: Date) {
 function handleDayClick(date: Date) {
   selectedDate.value = date
   showDayDetail.value = true
+  isAddingUsage.value = false
+  resetAddUsageState()
 }
 
 function closeDayDetail() {
   showDayDetail.value = false
   selectedDate.value = null
+  isAddingUsage.value = false
+  resetAddUsageState()
+}
+
+function resetAddUsageState() {
+  addUsageError.value = null
+  addUsageSuccess.value = null
+  newUsageNotes.value = ''
+  newUsageType.value = LeaveType.FULL_DAY
+  syncDefaultEmployee()
+}
+
+function syncDefaultEmployee(force = false) {
+  if (selectedEmployeeId.value !== 'all') {
+    newUsageEmployeeId.value = selectedEmployeeId.value
+    return
+  }
+
+  const employees = activeEmployees.value
+  if (!employees.length) {
+    newUsageEmployeeId.value = ''
+    return
+  }
+
+  const exists = employees.some((emp) => emp.id === newUsageEmployeeId.value)
+  if (force || !exists) {
+    newUsageEmployeeId.value = employees[0]?.id ?? ''
+  }
+}
+
+function openAddUsageForm() {
+  if (!canAddUsage.value) return
+  isAddingUsage.value = true
+  resetAddUsageState()
+}
+
+function toggleAddUsageForm() {
+  if (!canAddUsage.value) return
+  if (!isAddingUsage.value) {
+    openAddUsageForm()
+    return
+  }
+  isAddingUsage.value = false
+}
+
+async function submitDayUsage() {
+  if (!selectedDate.value) return
+  if (!newUsageEmployeeId.value) {
+    addUsageError.value = '请选择需要记录的员工'
+    return
+  }
+
+  addUsageError.value = null
+  addUsageSuccess.value = null
+  addUsageLoading.value = true
+
+  try {
+    const usageDate = new Date(selectedDate.value)
+    usageDate.setHours(0, 0, 0, 0)
+
+    await usageStore.recordUsage(
+      newUsageEmployeeId.value,
+      usageDate,
+      newUsageType.value,
+      newUsageNotes.value.trim() || undefined,
+    )
+
+    resetAddUsageState()
+    addUsageSuccess.value = '已记录休假'
+  } catch (error) {
+    addUsageError.value = error instanceof Error ? error.message : '记录休假时出现问题,请稍后再试'
+  } finally {
+    addUsageLoading.value = false
+  }
 }
 
 function getEmployeeName(employeeId: string): string {
@@ -87,12 +182,24 @@ onMounted(async () => {
   loading.value = true
   try {
     await Promise.all([employeeStore.loadEmployees(), usageStore.loadUsages()])
+    syncDefaultEmployee()
   } catch (e) {
     console.error('Failed to load data:', e)
   } finally {
     loading.value = false
   }
 })
+
+watch(
+  () => selectedEmployeeId.value,
+  () => {
+    if (selectedEmployeeId.value === 'all') {
+      syncDefaultEmployee()
+    } else {
+      newUsageEmployeeId.value = selectedEmployeeId.value
+    }
+  },
+)
 </script>
 
 <template>
@@ -196,6 +303,178 @@ onMounted(async () => {
               />
             </svg>
           </button>
+        </div>
+
+        <!-- Quick Add -->
+        <div class="mb-4 md:mb-5 space-y-3">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <p class="text-xs md:text-sm text-gray-500 dark:text-gray-400">
+              点击日期后可直接在此记录新的休假,系统会立即更新下方列表。
+            </p>
+            <div class="flex gap-2">
+              <button
+                @click="toggleAddUsageForm"
+                :disabled="!canAddUsage"
+                class="px-3 py-1.5 text-xs md:text-sm rounded-md font-medium transition-colors"
+                :class="[
+                  canAddUsage
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500',
+                ]"
+              >
+                {{ isAddingUsage ? '收起休假表单' : '添加休假记录' }}
+              </button>
+            </div>
+          </div>
+          <p v-if="!canAddUsage" class="text-xs text-red-500 dark:text-red-400">
+            当前没有在职员工,无法记录休假。
+          </p>
+        </div>
+
+        <div
+          v-if="isAddingUsage && canAddUsage"
+          class="bg-gray-50 dark:bg-gray-900/40 border border-dashed border-gray-200 dark:border-gray-700 rounded-lg p-3 md:p-4 mb-4"
+        >
+          <form class="space-y-3" @submit.prevent="submitDayUsage">
+            <div>
+              <label
+                for="newUsageEmployeeId"
+                class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                选择员工
+              </label>
+              <select
+                id="newUsageEmployeeId"
+                v-model="newUsageEmployeeId"
+                :disabled="addUsageLoading || employeeSelectDisabled"
+                class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
+              >
+                <option value="" disabled>请选择员工</option>
+                <option v-for="employee in employeeOptions" :key="employee.id" :value="employee.id">
+                  {{ employee.name }}
+                </option>
+              </select>
+              <p
+                v-if="employeeSelectDisabled"
+                class="text-xs text-gray-500 dark:text-gray-400 mt-1"
+              >
+                由于启用了员工筛选,当前仅能为该员工新增休假。
+              </p>
+            </div>
+
+            <fieldset :disabled="addUsageLoading">
+              <legend
+                class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
+                休假类型
+              </legend>
+              <div class="grid grid-cols-3 gap-2 text-xs md:text-sm">
+                <label
+                  for="leave-type-full-day"
+                  class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
+                  :class="
+                    newUsageType === LeaveType.FULL_DAY
+                      ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/30'
+                      : 'border-gray-200 dark:border-gray-700'
+                  "
+                >
+                  <input
+                    id="leave-type-full-day"
+                    v-model="newUsageType"
+                    class="text-blue-600 focus:ring-blue-500"
+                    name="add-usage-type"
+                    type="radio"
+                    :value="LeaveType.FULL_DAY"
+                  />
+                  <span>全天 (1 天)</span>
+                </label>
+                <label
+                  for="leave-type-morning"
+                  class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
+                  :class="
+                    newUsageType === LeaveType.MORNING
+                      ? 'border-purple-400 bg-purple-50 dark:bg-purple-900/30'
+                      : 'border-gray-200 dark:border-gray-700'
+                  "
+                >
+                  <input
+                    id="leave-type-morning"
+                    v-model="newUsageType"
+                    class="text-purple-600 focus:ring-purple-500"
+                    name="add-usage-type"
+                    type="radio"
+                    :value="LeaveType.MORNING"
+                  />
+                  <span>上午 (0.5 天)</span>
+                </label>
+                <label
+                  for="leave-type-afternoon"
+                  class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
+                  :class="
+                    newUsageType === LeaveType.AFTERNOON
+                      ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
+                      : 'border-gray-200 dark:border-gray-700'
+                  "
+                >
+                  <input
+                    id="leave-type-afternoon"
+                    v-model="newUsageType"
+                    class="text-indigo-600 focus:ring-indigo-500"
+                    name="add-usage-type"
+                    type="radio"
+                    :value="LeaveType.AFTERNOON"
+                  />
+                  <span>下午 (0.5 天)</span>
+                </label>
+              </div>
+            </fieldset>
+
+            <div>
+              <label
+                for="newUsageNotes"
+                class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
+                备注 (可选)
+              </label>
+              <textarea
+                id="newUsageNotes"
+                v-model="newUsageNotes"
+                :disabled="addUsageLoading"
+                rows="2"
+                class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
+                placeholder="例如: 请假原因、审批人等"
+              ></textarea>
+            </div>
+
+            <div v-if="addUsageError" class="text-xs text-red-600 dark:text-red-400" role="alert">
+              {{ addUsageError }}
+            </div>
+            <div
+              v-if="addUsageSuccess"
+              class="text-xs text-green-600 dark:text-green-400"
+              role="alert"
+            >
+              {{ addUsageSuccess }}
+            </div>
+
+            <div class="flex justify-end gap-2">
+              <button
+                type="button"
+                class="px-3 py-1.5 rounded-md text-xs md:text-sm border border-gray-200 text-gray-600 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                :disabled="addUsageLoading"
+                @click="toggleAddUsageForm"
+              >
+                取消
+              </button>
+              <button
+                type="submit"
+                class="px-4 py-1.5 rounded-md text-xs md:text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                :disabled="addUsageLoading || !newUsageEmployeeId"
+              >
+                {{ addUsageLoading ? '提交中...' : '确认记录' }}
+              </button>
+            </div>
+          </form>
         </div>
 
         <!-- Usage List -->
