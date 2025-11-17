@@ -99,10 +99,7 @@ function syncDefaultEmployee(force = false) {
 
   const exists = employees.some((emp) => emp.id === newUsageEmployeeId.value)
   if (force || !exists) {
-    const defaultEmployee = employees[0]
-    if (defaultEmployee) {
-      newUsageEmployeeId.value = defaultEmployee.id
-    }
+    newUsageEmployeeId.value = employees[0]!.id
   }
 }
 
@@ -212,7 +209,6 @@ watch(
       syncDefaultEmployee()
     }
   },
-  { deep: true },
 )
 </script>
 
@@ -351,10 +347,11 @@ watch(
         >
           <form class="space-y-3" @submit.prevent="submitDayUsage">
             <div>
-              <label class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label for="newUsageEmployeeId" class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 选择员工
               </label>
               <select
+                id="newUsageEmployeeId"
                 v-model="newUsageEmployeeId"
                 :disabled="addUsageLoading || employeeSelectDisabled"
                 class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
@@ -376,15 +373,15 @@ watch(
               </p>
             </div>
 
-            <div>
-              <label class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <fieldset>
+              <legend class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 休假类型
-              </label>
+              </legend>
               <div class="grid grid-cols-3 gap-2 text-xs md:text-sm">
                 <label
                   class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
                   :class="
-                    newUsageType === 'full_day'
+                    newUsageType === LeaveType.FULL_DAY
                       ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/30'
                       : 'border-gray-200 dark:border-gray-700'
                   "
@@ -395,14 +392,14 @@ watch(
                     class="text-blue-600 focus:ring-blue-500"
                     name="add-usage-type"
                     type="radio"
-                    value="full_day"
+                    :value="LeaveType.FULL_DAY"
                   />
                   <span>全天 (1 天)</span>
                 </label>
                 <label
                   class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
                   :class="
-                    newUsageType === 'morning'
+                    newUsageType === LeaveType.MORNING
                       ? 'border-purple-400 bg-purple-50 dark:bg-purple-900/30'
                       : 'border-gray-200 dark:border-gray-700'
                   "
@@ -413,14 +410,14 @@ watch(
                     class="text-purple-600 focus:ring-purple-500"
                     name="add-usage-type"
                     type="radio"
-                    value="morning"
+                    :value="LeaveType.MORNING"
                   />
                   <span>上午 (0.5 天)</span>
                 </label>
                 <label
                   class="flex items-center gap-1.5 rounded-md border px-2 py-1.5 cursor-pointer"
                   :class="
-                    newUsageType === 'afternoon'
+                    newUsageType === LeaveType.AFTERNOON
                       ? 'border-indigo-400 bg-indigo-50 dark:bg-indigo-900/30'
                       : 'border-gray-200 dark:border-gray-700'
                   "
@@ -431,18 +428,19 @@ watch(
                     class="text-indigo-600 focus:ring-indigo-500"
                     name="add-usage-type"
                     type="radio"
-                    value="afternoon"
+                    :value="LeaveType.AFTERNOON"
                   />
                   <span>下午 (0.5 天)</span>
                 </label>
               </div>
-            </div>
+            </fieldset>
 
             <div>
-              <label class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label for="newUsageNotes" class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                 备注 (可选)
               </label>
               <textarea
+                id="newUsageNotes"
                 v-model="newUsageNotes"
                 :disabled="addUsageLoading"
                 rows="2"
