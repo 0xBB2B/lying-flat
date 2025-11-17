@@ -67,12 +67,14 @@ function handleMonthChange(newMonth: Date) {
 function handleDayClick(date: Date) {
   selectedDate.value = date
   showDayDetail.value = true
-  // openAddUsageForm() // Removed to avoid intrusive form opening
+  isAddingUsage.value = false
+  resetAddUsageState()
 }
 
 function closeDayDetail() {
   showDayDetail.value = false
   selectedDate.value = null
+  isAddingUsage.value = false
   resetAddUsageState()
 }
 
@@ -360,7 +362,7 @@ watch(
               </p>
             </div>
 
-            <fieldset>
+            <fieldset :disabled="addUsageLoading">
               <legend
                 class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
               >
@@ -379,7 +381,6 @@ watch(
                   <input
                     id="leave-type-full-day"
                     v-model="newUsageType"
-                    :disabled="addUsageLoading"
                     class="text-blue-600 focus:ring-blue-500"
                     name="add-usage-type"
                     type="radio"
@@ -399,7 +400,6 @@ watch(
                   <input
                     id="leave-type-morning"
                     v-model="newUsageType"
-                    :disabled="addUsageLoading"
                     class="text-purple-600 focus:ring-purple-500"
                     name="add-usage-type"
                     type="radio"
@@ -419,7 +419,6 @@ watch(
                   <input
                     id="leave-type-afternoon"
                     v-model="newUsageType"
-                    :disabled="addUsageLoading"
                     class="text-indigo-600 focus:ring-indigo-500"
                     name="add-usage-type"
                     type="radio"
