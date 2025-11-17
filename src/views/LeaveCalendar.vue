@@ -67,7 +67,7 @@ function handleMonthChange(newMonth: Date) {
 function handleDayClick(date: Date) {
   selectedDate.value = date
   showDayDetail.value = true
-  openAddUsageForm()
+  // openAddUsageForm() // Removed to avoid intrusive form opening
 }
 
 function closeDayDetail() {
@@ -142,8 +142,7 @@ async function submitDayUsage() {
     resetAddUsageState()
     addUsageSuccess.value = '已记录休假'
   } catch (error) {
-    addUsageError.value =
-      error instanceof Error ? error.message : '记录休假时出现问题,请稍后再试'
+    addUsageError.value = error instanceof Error ? error.message : '记录休假时出现问题,请稍后再试'
   } finally {
     addUsageLoading.value = false
   }
@@ -318,7 +317,7 @@ watch(
                 :class="[
                   canAddUsage
                     ? 'bg-blue-600 text-white hover:bg-blue-700'
-                    : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                    : 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500',
                 ]"
               >
                 {{ isAddingUsage ? '收起休假表单' : '添加休假记录' }}
@@ -336,7 +335,10 @@ watch(
         >
           <form class="space-y-3" @submit.prevent="submitDayUsage">
             <div>
-              <label for="newUsageEmployeeId" class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                for="newUsageEmployeeId"
+                class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 选择员工
               </label>
               <select
@@ -346,11 +348,7 @@ watch(
                 class="w-full px-3 py-2 border rounded-md bg-white dark:bg-gray-800 dark:border-gray-700 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 dark:disabled:bg-gray-700"
               >
                 <option value="" disabled>请选择员工</option>
-                <option
-                  v-for="employee in employeeOptions"
-                  :key="employee.id"
-                  :value="employee.id"
-                >
+                <option v-for="employee in employeeOptions" :key="employee.id" :value="employee.id">
                   {{ employee.name }}
                 </option>
               </select>
@@ -363,7 +361,9 @@ watch(
             </div>
 
             <fieldset>
-              <legend class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <legend
+                class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+              >
                 休假类型
               </legend>
               <div class="grid grid-cols-3 gap-2 text-xs md:text-sm">
@@ -431,7 +431,10 @@ watch(
             </fieldset>
 
             <div>
-              <label for="newUsageNotes" class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label
+                for="newUsageNotes"
+                class="block text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
+              >
                 备注 (可选)
               </label>
               <textarea
@@ -447,7 +450,11 @@ watch(
             <div v-if="addUsageError" class="text-xs text-red-600 dark:text-red-400" role="alert">
               {{ addUsageError }}
             </div>
-            <div v-if="addUsageSuccess" class="text-xs text-green-600 dark:text-green-400" role="alert">
+            <div
+              v-if="addUsageSuccess"
+              class="text-xs text-green-600 dark:text-green-400"
+              role="alert"
+            >
               {{ addUsageSuccess }}
             </div>
 
