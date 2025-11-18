@@ -78,10 +78,7 @@ export function getAnnualLeaveDays(totalMonths: number): number {
  * @param currentDate 当前日期 (可选,用于测试)
  * @returns 下次年假发放日期
  */
-export function calculateNextLeaveGrantDate(
-  hireDate: Date,
-  currentDate: Date = new Date(),
-): Date {
+export function calculateNextLeaveGrantDate(hireDate: Date, currentDate: Date = new Date()): Date {
   const tenureMonths = calculateTenure(hireDate, currentDate)
 
   // 如果不满6个月,下次发放是6个月后
@@ -118,12 +115,20 @@ export function calculateExpiryDate(grantDate: Date): Date {
  * @param currentDate 当前日期 (可选,用于测试)
  * @returns 是否已过期
  */
-export function isLeaveExpired(
-  expiryDate: Date | null,
-  currentDate: Date = new Date(),
-): boolean {
+export function isLeaveExpired(expiryDate: Date | null, currentDate: Date = new Date()): boolean {
   if (expiryDate === null) return false // 永久有效的年假不过期
   return currentDate > expiryDate
+}
+
+/**
+ * 检查年假在指定时点是否已过期
+ * @param expiryDate 过期日期
+ * @param targetDate 目标时点日期
+ * @returns 在该时点是否已过期
+ */
+export function isLeaveExpiredAtDate(expiryDate: Date | null, targetDate: Date): boolean {
+  if (expiryDate === null) return false // 永久有效的年假不过期
+  return targetDate > expiryDate
 }
 
 /**
@@ -174,4 +179,17 @@ export function calculateAllLeaveEntitlements(
   }
 
   return entitlements
+}
+
+/**
+ * 计算截至指定日期的所有应发放额度
+ * @param hireDate 入职日期
+ * @param targetDate 目标日期
+ * @returns 截至目标日期的年假发放记录数组
+ */
+export function calculateAllLeaveEntitlementsUpToDate(
+  hireDate: Date,
+  targetDate: Date,
+): Array<{ grantDate: Date; days: number; expiryDate: Date; grantNumber: number }> {
+  return calculateAllLeaveEntitlements(hireDate, targetDate)
 }

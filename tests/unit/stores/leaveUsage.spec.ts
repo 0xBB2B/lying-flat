@@ -329,8 +329,15 @@ describe('leaveUsageStore', () => {
     })
 
     it('应该成功记录全天休假', async () => {
-      // Mock deductUsage to return entitlement IDs
-      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+      // Mock calculateBalanceAtDate to return sufficient balance
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: new Date('2024-01-15'),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       const date = new Date('2024-01-15')
 
@@ -345,7 +352,14 @@ describe('leaveUsageStore', () => {
     })
 
     it('应该成功记录半天休假', async () => {
-      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: new Date('2024-01-15'),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       const date = new Date('2024-01-15')
 
@@ -356,14 +370,22 @@ describe('leaveUsageStore', () => {
       expect(usageStore.usages[0].type).toBe(LeaveType.MORNING)
     })
 
-    it('应该调用 entitlementStore.deductUsage 扣减余额', async () => {
-      const deductUsageSpy = vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+    it('应该验证时点余额并记录使用', async () => {
+      // Mock calculateBalanceAtDate instead of deductUsage
+      const balanceAtDate = vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: new Date('2024-01-15'),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       const date = new Date('2024-01-15')
       await usageStore.recordUsage('emp-1', date, LeaveType.FULL_DAY)
 
-      expect(deductUsageSpy).toHaveBeenCalledWith('emp-1', 1)
-      expect(usageStore.usages[0].entitlementIds).toEqual(['ent-1'])
+      expect(balanceAtDate).toHaveBeenCalledWith('emp-1', expect.any(Date))
+      expect(usageStore.usages[0].entitlementIds).toEqual([]) // 不再记录具体的额度IDs
     })
 
     it('员工不存在时应该抛出错误', async () => {
@@ -377,7 +399,14 @@ describe('leaveUsageStore', () => {
     })
 
     it('应该允许记录未来的休假日期', async () => {
-      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: expect.any(Date),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       const future = new Date()
       future.setDate(future.getDate() + 5)
@@ -390,7 +419,14 @@ describe('leaveUsageStore', () => {
     })
 
     it('同一天已有全天休假时应该抛出错误', async () => {
-      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: expect.any(Date),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       // Use yesterday to ensure it's not in the future
       const yesterday = new Date()
@@ -410,7 +446,14 @@ describe('leaveUsageStore', () => {
     })
 
     it('同一天已有上午休假时,再记录上午应该抛出错误', async () => {
-      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: expect.any(Date),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       // Use yesterday to ensure it's not in the future
       const yesterday = new Date()
@@ -430,7 +473,14 @@ describe('leaveUsageStore', () => {
     })
 
     it('同一天已有上午休假时,可以记录下午', async () => {
-      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: new Date('2024-01-15'),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       const date = new Date('2024-01-15')
 
@@ -444,7 +494,14 @@ describe('leaveUsageStore', () => {
     })
 
     it('应该设置 createdBy 参数', async () => {
-      vi.spyOn(entitlementStore, 'deductUsage').mockResolvedValue(['ent-1'])
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: new Date('2024-01-15'),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 0,
+        remainingDays: 10,
+        entitlements: [],
+      })
 
       const date = new Date('2024-01-15')
 
@@ -454,13 +511,20 @@ describe('leaveUsageStore', () => {
     })
 
     it('余额不足时应该抛出错误', async () => {
-      // Mock deductUsage 抛出余额不足错误
-      vi.spyOn(entitlementStore, 'deductUsage').mockRejectedValue(new Error('年假余额不足'))
+      // Mock calculateBalanceAtDate 返回不足余额
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+        date: new Date('2024-01-15'),
+        employeeId: 'emp-1',
+        totalDays: 10,
+        usedDays: 10,
+        remainingDays: 0, // 余额不足
+        entitlements: [],
+      })
 
       const date = new Date('2024-01-15')
 
       await expect(usageStore.recordUsage('emp-1', date, LeaveType.FULL_DAY)).rejects.toThrow(
-        '年假余额不足',
+        '该日期时点年假余额不足',
       )
 
       expect(usageStore.usages).toHaveLength(0)
@@ -531,8 +595,10 @@ describe('leaveUsageStore', () => {
     it('recordUsage 失败时应该设置 error', async () => {
       employeeStore.employees = [mockEmployee]
 
-      // Mock deductUsage 失败
-      vi.spyOn(entitlementStore, 'deductUsage').mockRejectedValue(new Error('扣减失败'))
+      // Mock calculateBalanceAtDate 失败
+      vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockImplementation(() => {
+        throw new Error('计算余额失败')
+      })
 
       const date = new Date('2024-01-15')
 
@@ -559,6 +625,172 @@ describe('leaveUsageStore', () => {
       await expect(usageStore.deleteUsage('usage-1')).rejects.toThrow()
 
       expect(usageStore.error).toBeTruthy()
+    })
+  })
+
+  // T016-T019: 时点余额验证测试
+  describe('recordUsage - Point-in-Time Balance Validation', () => {
+    beforeEach(async () => {
+      vi.mocked(storage.load).mockReturnValue({
+        employees: [],
+        entitlements: [],
+        usages: [],
+        adjustments: [],
+      })
+
+      employeeStore.employees = [mockEmployee]
+      entitlementStore.entitlements = [mockEntitlement]
+    })
+
+    describe('T016: recordUsage allows historical date with sufficient balance', () => {
+      it('应该允许记录历史日期的休假（当该时点余额充足时）', async () => {
+        // Ensure save returns true
+        vi.mocked(storage.save).mockReturnValue(true)
+
+        // Mock calculateBalanceAtDate 返回充足余额
+        vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+          date: new Date('2024-01-15'),
+          employeeId: 'emp-1',
+          totalDays: 10,
+          usedDays: 5,
+          remainingDays: 5,
+          entitlements: [],
+        })
+
+        const historicalDate = new Date('2024-01-15')
+
+        await usageStore.recordUsage('emp-1', historicalDate, LeaveType.FULL_DAY, '历史记录')
+
+        expect(usageStore.usages).toHaveLength(1)
+        // 检查日期是否为2024-01-15的午夜（本地时间）
+        const expectedDate = new Date('2024-01-15')
+        expectedDate.setHours(0, 0, 0, 0)
+        expect(usageStore.usages[0].date.getTime()).toBe(expectedDate.getTime())
+        expect(usageStore.usages[0].days).toBe(1)
+      })
+    })
+
+    describe('T017: recordUsage blocks historical date with insufficient balance', () => {
+      it('应该拒绝记录历史日期的休假（当该时点余额不足时）', async () => {
+        // Mock calculateBalanceAtDate 返回不足余额
+        const balanceAtDate = {
+          date: new Date('2024-01-15'),
+          employeeId: 'emp-1',
+          totalDays: 10,
+          usedDays: 9.5,
+          remainingDays: 0.5, // 只剩0.5天，不够1天
+          entitlements: [],
+        }
+
+        vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue(balanceAtDate)
+
+        const historicalDate = new Date('2024-01-15')
+
+        await expect(
+          usageStore.recordUsage('emp-1', historicalDate, LeaveType.FULL_DAY),
+        ).rejects.toThrow('该日期时点年假余额不足')
+
+        expect(usageStore.usages).toHaveLength(0)
+      })
+
+      it('错误对象应该包含详细的余额信息', async () => {
+        const balanceAtDate = {
+          date: new Date('2024-01-15'),
+          employeeId: 'emp-1',
+          totalDays: 10,
+          usedDays: 9.5,
+          remainingDays: 0.5,
+          entitlements: [],
+        }
+
+        vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue(balanceAtDate)
+
+        try {
+          await usageStore.recordUsage('emp-1', new Date('2024-01-15'), LeaveType.FULL_DAY)
+          expect.fail('应该抛出错误')
+        } catch (error: unknown) {
+          expect(error).toBeInstanceOf(Error)
+          const err = error as {
+            name: string
+            employeeId: string
+            requested: number
+            available: number
+            details: unknown
+          }
+          expect(err.name).toBe('InsufficientBalanceError')
+          expect(err.employeeId).toBe('emp-1')
+          expect(err.requested).toBe(1)
+          expect(err.available).toBe(0.5)
+          expect(err.details).toEqual(balanceAtDate)
+        }
+      })
+    })
+
+    describe('T018: recordUsage blocks date before hire date', () => {
+      it('应该拒绝入职日期之前的休假记录', async () => {
+        const beforeHireDate = new Date('2022-12-01') // mockEmployee入职日期是2023-01-01
+
+        await expect(
+          usageStore.recordUsage('emp-1', beforeHireDate, LeaveType.FULL_DAY),
+        ).rejects.toThrow('休假日期不能早于入职日期')
+
+        expect(usageStore.usages).toHaveLength(0)
+      })
+
+      it('错误类型应该是 InvalidDateError with reason before-hire', async () => {
+        try {
+          await usageStore.recordUsage('emp-1', new Date('2022-12-01'), LeaveType.FULL_DAY)
+          expect.fail('应该抛出错误')
+        } catch (error: unknown) {
+          expect(error).toBeInstanceOf(Error)
+          const err = error as { name: string; reason: string }
+          expect(err.name).toBe('InvalidDateError')
+          expect(err.reason).toBe('before-hire')
+        }
+      })
+    })
+
+    describe('T019: recordUsage blocks date before first entitlement', () => {
+      it('应该拒绝在首次额度发放前的休假记录', async () => {
+        // Mock calculateBalanceAtDate 返回0额度（入职未满6个月）
+        vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+          date: new Date('2023-03-01'),
+          employeeId: 'emp-1',
+          totalDays: 0, // 尚未获得额度
+          usedDays: 0,
+          remainingDays: 0,
+          entitlements: [],
+        })
+
+        const beforeFirstGrant = new Date('2023-03-01') // 入职2个月，首次发放需要6个月
+
+        await expect(
+          usageStore.recordUsage('emp-1', beforeFirstGrant, LeaveType.FULL_DAY),
+        ).rejects.toThrow('该日期时点尚未获得年假额度')
+
+        expect(usageStore.usages).toHaveLength(0)
+      })
+
+      it('错误类型应该是 InvalidDateError with reason no-entitlement', async () => {
+        vi.spyOn(entitlementStore, 'calculateBalanceAtDate').mockReturnValue({
+          date: new Date('2023-03-01'),
+          employeeId: 'emp-1',
+          totalDays: 0,
+          usedDays: 0,
+          remainingDays: 0,
+          entitlements: [],
+        })
+
+        try {
+          await usageStore.recordUsage('emp-1', new Date('2023-03-01'), LeaveType.FULL_DAY)
+          expect.fail('应该抛出错误')
+        } catch (error: unknown) {
+          expect(error).toBeInstanceOf(Error)
+          const err = error as { name: string; reason: string }
+          expect(err.name).toBe('InvalidDateError')
+          expect(err.reason).toBe('no-entitlement')
+        }
+      })
     })
   })
 })

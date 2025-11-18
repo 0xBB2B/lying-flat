@@ -101,6 +101,17 @@ export function getEndOfMonth(date: Date): Date {
 }
 
 /**
+ * 标准化日期为当天00:00:00 (用于时点计算)
+ * @param date 原始日期
+ * @returns 标准化后的日期（时间部分为00:00:00.000）
+ */
+export function normalizeDate(date: Date): Date {
+  const normalized = new Date(date)
+  normalized.setHours(0, 0, 0, 0)
+  return normalized
+}
+
+/**
  * 获取日期区间内的所有天数
  */
 export function getDaysInInterval(start: Date, end: Date): Date[] {

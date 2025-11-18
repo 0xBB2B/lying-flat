@@ -1,4 +1,5 @@
 // T007-T010: Leave相关类型定义
+// T003: 增加时点余额相关类型定义 (PointInTimeBalance, PointInTimeEntitlement)
 
 // LeaveEntitlement (年假额度)
 export enum EntitlementSource {
@@ -71,4 +72,26 @@ export interface LeaveBalance {
   expiringSoon: LeaveEntitlement[] // 即将过期的额度 (30天内)
   nextGrantDate: Date // 下次发放日期
   nextGrantDays: number // 下次发放天数
+}
+
+// PointInTimeBalance (时点余额快照) - 运行时类型，不持久化
+export interface PointInTimeBalance {
+  date: Date // 查询的时点日期
+  employeeId: string // 员工ID
+  totalDays: number // 该时点的总额度（已发放且未过期）
+  usedDays: number // 该时点已使用天数
+  remainingDays: number // 该时点剩余天数
+  entitlements: PointInTimeEntitlement[] // 各批次额度详情
+}
+
+// PointInTimeEntitlement (时点额度详情) - 运行时类型，不持久化
+export interface PointInTimeEntitlement {
+  id: string // 额度ID
+  days: number // 该批次总天数
+  grantDate: Date // 发放日期
+  expiryDate: Date | null // 过期日期
+  source: EntitlementSource // 来源类型
+  usedDays: number // 该批次在此时点的已用天数
+  remainingDays: number // 该批次在此时点的剩余天数
+  isExpired: boolean // 在该时点是否已过期
 }

@@ -2,14 +2,23 @@
 
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import type { LeaveEntitlement, LeaveBalance, EntitlementSource, EntitlementStatus } from '@/types'
+import type {
+  LeaveEntitlement,
+  LeaveBalance,
+  EntitlementSource,
+  EntitlementStatus,
+  PointInTimeBalance,
+  PointInTimeEntitlement,
+} from '@/types'
 import { load, save } from '@/utils/storage'
 import {
   calculateAllLeaveEntitlements,
   isLeaveExpired,
+  isLeaveExpiredAtDate,
   calculateNextLeaveGrantDate,
   getAnnualLeaveDaysByGrantNumber,
 } from '@/utils/leaveCalculator'
+import { normalizeDate } from '@/utils/dateUtils'
 import { useEmployeeStore } from './employee'
 
 export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
@@ -145,41 +154,13 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
     }
 
     const currentDate = new Date()
-    const activeEnts = getActiveEntitlementsByEmployeeId.value(employeeId)
 
-    // 计算总额度
-    const totalEntitlement = activeEnts.reduce((sum, e) => sum + e.days, 0)
-
-    // 从实际使用记录和调整记录重新计算已使用天数 (防止数据不一致)
-    const data = load()
-
-    // 1. 实际休假使用的天数
-    const usedFromUsages =
-      data && data.usages
-        ? data.usages
-            .filter((usage: { employeeId: string }) => usage.employeeId === employeeId)
-            .reduce((sum: number, usage: { days?: number }) => sum + (usage.days || 0), 0)
-        : 0
-
-    // 2. 手动扣减的天数
-    const deductedFromAdjustments =
-      data && data.adjustments
-        ? data.adjustments
-            .filter(
-              (adj: { employeeId: string; adjustmentType: string }) =>
-                adj.employeeId === employeeId && adj.adjustmentType === 'deduct',
-            )
-            .reduce((sum: number, adj: { days?: number }) => sum + (adj.days || 0), 0)
-        : 0
-
-    // 总已使用 = 实际休假 + 手动扣减
-    const actualUsedDays = usedFromUsages + deductedFromAdjustments
-
-    // 剩余天数 = 总额度 - 实际已使用
-    const remainingDays = totalEntitlement - actualUsedDays
+    // 使用 calculateBalanceAtDate 来计算当前余额
+    const balanceAtNow = calculateBalanceAtDate(employeeId, currentDate)
 
     // 找出即将过期的额度 (30天内)
     const thirtyDaysLater = new Date(currentDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+    const activeEnts = getActiveEntitlementsByEmployeeId.value(employeeId)
     const expiringSoon = activeEnts.filter(
       (e) => e.expiryDate && e.expiryDate <= thirtyDaysLater && e.expiryDate > currentDate,
     )
@@ -194,12 +175,111 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
 
     return {
       employeeId,
-      totalEntitlement,
-      usedDays: actualUsedDays,
-      remainingDays,
+      totalEntitlement: balanceAtNow.totalDays,
+      usedDays: balanceAtNow.usedDays,
+      remainingDays: balanceAtNow.remainingDays,
       expiringSoon,
       nextGrantDate,
       nextGrantDays,
+    }
+  }
+
+  /**
+   * 计算指定员工在特定时点的年假余额（支持历史日期查询）
+   * @param employeeId 员工 ID
+   * @param targetDate 目标时点日期
+   * @returns 时点余额信息
+   */
+  function calculateBalanceAtDate(employeeId: string, targetDate: Date): PointInTimeBalance {
+    const employeeStore = useEmployeeStore()
+    const employee = employeeStore.getEmployeeById(employeeId)
+
+    if (!employee) {
+      throw new Error(`员工 ID ${employeeId} 不存在`)
+    }
+
+    // 标准化目标日期为当天00:00:00
+    const normalizedTargetDate = normalizeDate(targetDate)
+
+    // 1. 获取该员工在目标日期时点前（含当天）已发放的所有额度
+    const allEmployeeEnts = entitlements.value.filter((e) => e.employeeId === employeeId)
+
+    // 2. 过滤出在目标日期时点有效的额度（已发放且未过期）
+    const validEnts = allEmployeeEnts.filter((e) => {
+      // 标准化发放日期进行比较
+      const normalizedGrantDate = normalizeDate(e.grantDate)
+      // 必须在目标日期前或当天发放
+      if (normalizedGrantDate > normalizedTargetDate) return false
+      // 不能在目标日期时点已过期
+      if (isLeaveExpiredAtDate(e.expiryDate, normalizedTargetDate)) return false
+      return true
+    })
+
+    // 3. 计算该时点的总额度
+    const totalDays = validEnts.reduce((sum, e) => sum + e.days, 0)
+
+    // 4. 获取目标日期之前（不含当天）的所有使用记录
+    const data = load()
+    const usagesBeforeDate =
+      data && data.usages
+        ? data.usages.filter((usage: { employeeId: string; date: string | Date }) => {
+            if (usage.employeeId !== employeeId) return false
+            const usageDate = new Date(usage.date)
+            usageDate.setHours(0, 0, 0, 0)
+            // 严格小于目标日期（不包含当天）
+            return usageDate < normalizedTargetDate
+          })
+        : []
+
+    // 5. 计算目标日期前的总使用天数
+    const totalUsedDays = usagesBeforeDate.reduce(
+      (sum: number, usage: { days?: number }) => sum + (usage.days || 0),
+      0,
+    )
+
+    // 6. 按FIFO原则（最早过期的优先）分配使用天数到各批次额度
+    const sortedEnts = [...validEnts].sort((a, b) => {
+      // 永久有效的额度排在最后
+      if (a.expiryDate === null && b.expiryDate === null) return 0
+      if (a.expiryDate === null) return 1
+      if (b.expiryDate === null) return -1
+      // 按过期日期升序排序
+      return a.expiryDate.getTime() - b.expiryDate.getTime()
+    })
+
+    // 分配使用天数
+    let remainingToAllocate = totalUsedDays
+    const entitlementDetails: PointInTimeEntitlement[] = []
+
+    for (const ent of sortedEnts) {
+      const allocatedDays = Math.min(ent.days, remainingToAllocate)
+      const remaining = ent.days - allocatedDays
+
+      entitlementDetails.push({
+        id: ent.id,
+        days: ent.days,
+        grantDate: ent.grantDate,
+        expiryDate: ent.expiryDate,
+        source: ent.source,
+        usedDays: allocatedDays,
+        remainingDays: remaining,
+        isExpired: false, // 已经过滤过了，这里的都是未过期的
+      })
+
+      remainingToAllocate -= allocatedDays
+      // 继续处理所有额度，即使已经分配完所有使用天数
+    }
+
+    // 7. 计算剩余天数
+    const remainingDays = totalDays - totalUsedDays
+
+    return {
+      date: normalizedTargetDate,
+      employeeId,
+      totalDays,
+      usedDays: totalUsedDays,
+      remainingDays,
+      entitlements: entitlementDetails,
     }
   }
 
@@ -508,6 +588,7 @@ export const useLeaveEntitlementStore = defineStore('leaveEntitlement', () => {
     loadEntitlements,
     grantLeave,
     calculateBalance,
+    calculateBalanceAtDate,
     addManualEntitlement,
     deleteManualEntitlementByAdjustmentId,
     deductUsage,

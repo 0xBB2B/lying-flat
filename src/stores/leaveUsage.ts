@@ -3,7 +3,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { LeaveUsage, LeaveType } from '@/types'
+import { InsufficientBalanceError, InvalidDateError } from '@/types/errors'
 import { load, save } from '@/utils/storage'
+import { normalizeDate } from '@/utils/dateUtils'
 import { useLeaveEntitlementStore } from './leaveEntitlement'
 import { useEmployeeStore } from './employee'
 
@@ -120,20 +122,58 @@ export const useLeaveUsageStore = defineStore('leaveUsage', () => {
         throw new Error(`员工 ID ${employeeId} 不存在`)
       }
 
-      const usageDate = new Date(date)
-      usageDate.setHours(0, 0, 0, 0)
+      const usageDate = normalizeDate(date)
+      const hireDate = normalizeDate(employee.hireDate)
+
+      // T010: 验证日期不早于入职日期
+      if (usageDate < hireDate) {
+        throw new InvalidDateError('休假日期不能早于入职日期', {
+          date: usageDate,
+          reason: 'before-hire',
+        })
+      }
 
       // 检查是否有重复的休假记录
       if (hasUsageOnDate.value(employeeId, usageDate, type)) {
-        throw new Error(`${usageDate.toISOString().split('T')[0]} 已有${type === 'full_day' ? '全天' : type === 'morning' ? '上午' : '下午'}休假记录`)
+        throw new Error(
+          `${usageDate.toISOString().split('T')[0]} 已有${type === 'full_day' ? '全天' : type === 'morning' ? '上午' : '下午'}休假记录`,
+        )
       }
 
       // 计算休假天数
       const days = type === 'full_day' ? 1 : 0.5
 
-      // 验证年假余额是否足够并扣减
+      // T009: 使用时点余额计算（而非当前日期的余额）
       const leaveEntitlementStore = useLeaveEntitlementStore()
-      const deductedEntitlementIds = await leaveEntitlementStore.deductUsage(employeeId, days)
+      const balanceAtDate = leaveEntitlementStore.calculateBalanceAtDate(employeeId, usageDate)
+
+      // T011: 验证该时点是否有可用额度
+      if (balanceAtDate.totalDays === 0) {
+        throw new InvalidDateError(
+          '该日期时点尚未获得年假额度（入职未满6个月或尚未到首次发放日期）',
+          {
+            date: usageDate,
+            reason: 'no-entitlement',
+          },
+        )
+      }
+
+      // T012: 验证时点余额是否足够（使用详细错误类型）
+      if (balanceAtDate.remainingDays < days) {
+        throw new InsufficientBalanceError(
+          `该日期时点年假余额不足（可用 ${balanceAtDate.remainingDays} 天，需要 ${days} 天）`,
+          {
+            employeeId,
+            date: usageDate,
+            requested: days,
+            available: balanceAtDate.remainingDays,
+            details: balanceAtDate,
+          },
+        )
+      }
+
+      // 注意：我们不再调用 deductUsage，因为实际的余额计算是基于使用记录的
+      // deductUsage 方法仅用于验证（保持向后兼容）
 
       // 创建使用记录
       const newUsage: LeaveUsage = {
@@ -142,7 +182,7 @@ export const useLeaveUsageStore = defineStore('leaveUsage', () => {
         date: usageDate,
         days,
         type,
-        entitlementIds: deductedEntitlementIds, // 记录扣减的额度ID
+        entitlementIds: [], // 不再跟踪具体哪些额度被扣减（通过 FIFO 计算得出）
         notes,
         createdAt: new Date(),
         createdBy,
@@ -153,7 +193,7 @@ export const useLeaveUsageStore = defineStore('leaveUsage', () => {
       // 持久化
       await saveUsages()
 
-      // 重新计算所有额度的使用情况
+      // 重新计算所有额度的使用情况（保持数据一致性）
       await leaveEntitlementStore.loadEntitlements()
     } catch (e) {
       error.value = e instanceof Error ? e.message : '记录年假使用失败'
