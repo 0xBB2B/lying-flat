@@ -13,8 +13,8 @@
 
 **Purpose**: 准备开发环境和类型定义
 
-- [ ] T001 Review existing codebase structure in src/stores/, src/utils/, src/types/
-- [ ] T002 Create feature branch 002-historical-leave-balance from main
+- [X] T001 Review existing codebase structure in src/stores/, src/utils/, src/types/
+- [X] T002 Create feature branch 002-historical-leave-balance from main
 
 ---
 
@@ -24,10 +24,10 @@
 
 **⚠️ CRITICAL**: 必须完成后才能开始用户故事实现
 
-- [ ] T003 [P] Add PointInTimeBalance and PointInTimeEntitlement types to src/types/leave.ts
-- [ ] T004 [P] Create src/types/errors.ts with InsufficientBalanceError and InvalidDateError classes
-- [ ] T005 [P] Add normalizeDate utility function to src/utils/dateUtils.ts
-- [ ] T006 [P] Add isLeaveExpiredAtDate function to src/utils/leaveCalculator.ts
+- [X] T003 [P] Add PointInTimeBalance and PointInTimeEntitlement types to src/types/leave.ts
+- [X] T004 [P] Create src/types/errors.ts with InsufficientBalanceError and InvalidDateError classes
+- [X] T005 [P] Add normalizeDate utility function to src/utils/dateUtils.ts
+- [X] T006 [P] Add isLeaveExpiredAtDate function to src/utils/leaveCalculator.ts
 
 **Checkpoint**: 基础类型已定义，可以开始实现核心逻辑
 
@@ -41,22 +41,22 @@
 
 ### Implementation for User Story 1
 
-- [ ] T007 [P] [US1] Implement calculateBalanceAtDate method in src/stores/leaveEntitlement.ts
-- [ ] T008 [US1] Modify calculateBalance to use calculateBalanceAtDate(employeeId, new Date()) in src/stores/leaveEntitlement.ts
-- [ ] T009 [US1] Update recordUsage validation logic to use calculateBalanceAtDate in src/stores/leaveUsage.ts
-- [ ] T010 [US1] Add date validation (not before hire date) in src/stores/leaveUsage.ts
-- [ ] T011 [US1] Add entitlement availability check (not before first grant) in src/stores/leaveUsage.ts
-- [ ] T012 [US1] Update error messages to use new error types with detailed context in src/stores/leaveUsage.ts
+- [X] T007 [P] [US1] Implement calculateBalanceAtDate method in src/stores/leaveEntitlement.ts
+- [X] T008 [US1] Modify calculateBalance to use calculateBalanceAtDate(employeeId, new Date()) in src/stores/leaveEntitlement.ts
+- [X] T009 [US1] Update recordUsage validation logic to use calculateBalanceAtDate in src/stores/leaveUsage.ts
+- [X] T010 [US1] Add date validation (not before hire date) in src/stores/leaveUsage.ts
+- [X] T011 [US1] Add entitlement availability check (not before first grant) in src/stores/leaveUsage.ts
+- [X] T012 [US1] Update error messages to use new error types with detailed context in src/stores/leaveUsage.ts
 
 ### Tests for User Story 1
 
-- [ ] T013 [P] [US1] Unit test: calculateBalanceAtDate with historical date (2024-09-15) in tests/unit/stores/leaveEntitlement.spec.ts
-- [ ] T014 [P] [US1] Unit test: calculateBalanceAtDate filters expired entitlements correctly in tests/unit/stores/leaveEntitlement.spec.ts
-- [ ] T015 [P] [US1] Unit test: calculateBalanceAtDate with date before first grant returns 0 in tests/unit/stores/leaveEntitlement.spec.ts
-- [ ] T016 [P] [US1] Unit test: recordUsage allows historical date with sufficient balance in tests/unit/stores/leaveUsage.spec.ts
-- [ ] T017 [P] [US1] Unit test: recordUsage blocks historical date with insufficient balance in tests/unit/stores/leaveUsage.spec.ts
-- [ ] T018 [P] [US1] Unit test: recordUsage blocks date before hire date in tests/unit/stores/leaveUsage.spec.ts
-- [ ] T019 [P] [US1] Unit test: recordUsage blocks date before first entitlement in tests/unit/stores/leaveUsage.spec.ts
+- [X] T013 [P] [US1] Unit test: calculateBalanceAtDate with historical date (2024-09-15) in tests/unit/stores/leaveEntitlement.spec.ts
+- [X] T014 [P] [US1] Unit test: calculateBalanceAtDate filters expired entitlements correctly in tests/unit/stores/leaveEntitlement.spec.ts
+- [X] T015 [P] [US1] Unit test: calculateBalanceAtDate with date before first grant returns 0 in tests/unit/stores/leaveEntitlement.spec.ts
+- [X] T016 [P] [US1] Unit test: recordUsage allows historical date with sufficient balance in tests/unit/stores/leaveUsage.spec.ts
+- [X] T017 [P] [US1] Unit test: recordUsage blocks historical date with insufficient balance in tests/unit/stores/leaveUsage.spec.ts
+- [X] T018 [P] [US1] Unit test: recordUsage blocks date before hire date in tests/unit/stores/leaveUsage.spec.ts
+- [X] T019 [P] [US1] Unit test: recordUsage blocks date before first entitlement in tests/unit/stores/leaveUsage.spec.ts
 
 **Checkpoint**: 时点余额计算功能完整，历史休假记录验证正确
 
@@ -70,16 +70,16 @@
 
 ### Implementation for User Story 2
 
-- [ ] T020 [US2] Verify recalculateAllEntitlements correctly processes historical usages in src/stores/leaveEntitlement.ts
-- [ ] T021 [US2] Ensure deleteUsage triggers recalculation correctly in src/stores/leaveUsage.ts
-- [ ] T022 [US2] Verify loadEntitlements recalculates on data load in src/stores/leaveEntitlement.ts
+- [X] T020 [US2] Verify recalculateAllEntitlements correctly processes historical usages in src/stores/leaveEntitlement.ts
+- [X] T021 [US2] Ensure deleteUsage triggers recalculation correctly in src/stores/leaveUsage.ts
+- [X] T022 [US2] Verify loadEntitlements recalculates on data load in src/stores/leaveEntitlement.ts
 
 ### Tests for User Story 2
 
-- [ ] T023 [P] [US2] Integration test: Add historical usage, verify current balance updated in tests/unit/stores/leaveUsage.spec.ts
-- [ ] T024 [P] [US2] Integration test: Add historical usage of expired entitlement, verify current balance unchanged in tests/unit/stores/leaveUsage.spec.ts
-- [ ] T025 [P] [US2] Integration test: Delete historical usage, verify current balance restored in tests/unit/stores/leaveUsage.spec.ts
-- [ ] T026 [US2] End-to-end test: Multiple historical records affect current balance correctly in tests/component/leave/LeaveUsageForm.spec.ts
+- [X] T023 [P] [US2] Integration test: Add historical usage, verify current balance updated in tests/unit/stores/leaveUsage.spec.ts
+- [X] T024 [P] [US2] Integration test: Add historical usage of expired entitlement, verify current balance unchanged in tests/unit/stores/leaveUsage.spec.ts
+- [X] T025 [P] [US2] Integration test: Delete historical usage, verify current balance restored in tests/unit/stores/leaveUsage.spec.ts
+- [X] T026 [US2] End-to-end test: Multiple historical records affect current balance correctly in tests/component/leave/LeaveUsageForm.spec.ts
 
 **Checkpoint**: 历史记录与当前余额的一致性得到保证
 
@@ -93,16 +93,16 @@
 
 ### Implementation for User Story 3
 
-- [ ] T027 [US3] Review and validate FIFO allocation logic in calculateBalanceAtDate in src/stores/leaveEntitlement.ts
-- [ ] T028 [US3] Ensure entitlement sorting (by expiry date) is correct in src/stores/leaveEntitlement.ts
-- [ ] T029 [US3] Verify manual adjustments (permanent entitlements) are allocated last in src/stores/leaveEntitlement.ts
+- [X] T027 [US3] Review and validate FIFO allocation logic in calculateBalanceAtDate in src/stores/leaveEntitlement.ts
+- [X] T028 [US3] Ensure entitlement sorting (by expiry date) is correct in src/stores/leaveEntitlement.ts
+- [X] T029 [US3] Verify manual adjustments (permanent entitlements) are allocated last in src/stores/leaveEntitlement.ts
 
 ### Tests for User Story 3
 
-- [ ] T030 [P] [US3] Unit test: FIFO allocation across multiple entitlement batches in tests/unit/stores/leaveEntitlement.spec.ts
-- [ ] T031 [P] [US3] Unit test: Historical usage consumes earliest expiring entitlement first in tests/unit/stores/leaveEntitlement.spec.ts
-- [ ] T032 [P] [US3] Unit test: Manual entitlements (null expiry) are consumed last in tests/unit/stores/leaveEntitlement.spec.ts
-- [ ] T033 [US3] Integration test: Multiple historical records across years allocate correctly in tests/unit/stores/leaveUsage.spec.ts
+- [X] T030 [P] [US3] Unit test: FIFO allocation across multiple entitlement batches in tests/unit/stores/leaveEntitlement.spec.ts
+- [X] T031 [P] [US3] Unit test: Historical usage consumes earliest expiring entitlement first in tests/unit/stores/leaveEntitlement.spec.ts
+- [X] T032 [P] [US3] Unit test: Manual entitlements (null expiry) are consumed last in tests/unit/stores/leaveEntitlement.spec.ts
+- [X] T033 [US3] Integration test: Multiple historical records across years allocate correctly in tests/unit/stores/leaveUsage.spec.ts
 
 **Checkpoint**: 跨年度和多批次额度的FIFO分配逻辑验证通过
 
@@ -122,9 +122,9 @@
 
 **Purpose**: 最终验证、文档和代码质量
 
-- [ ] T037 [P] Run all existing tests to ensure no regression (npm run test)
-- [ ] T038 [P] Run type checking (npm run type-check)
-- [ ] T039 [P] Run linter (npm run lint)
+- [X] T037 [P] Run all existing tests to ensure no regression (npm run test)
+- [X] T038 [P] Run type checking (npm run type-check)
+- [X] T039 [P] Run linter (npm run lint)
 - [ ] T040 Manual test: Scenario 1 from spec.md - 张三 2024-09-15 历史记录
 - [ ] T041 Manual test: Scenario 2 from spec.md - 李四 入职不满6个月
 - [ ] T042 Manual test: Scenario 3 from spec.md - 王五 余额不足
@@ -265,10 +265,10 @@ Task T019: block before entitlement
 
 完成以下所有项即可认为功能完整：
 
-- [ ] **SC-001**: HR管理员能够正确补录任意历史日期的休假记录，验证准确率100%
-- [ ] **SC-002**: 补录历史休假记录后，员工当前年假余额计算准确率100%
-- [ ] **SC-003**: 系统能够在1秒内完成基于任意历史时点的年假余额计算
-- [ ] **SC-004**: 用户在补录历史休假时能看到详细的错误提示信息
-- [ ] **SC-005**: 删除历史休假记录后，系统能够在2秒内完成余额重新计算
-- [ ] **SC-006**: 系统正确处理100%的边界情况（入职前、有效期外、余额不足）
-- [ ] **SC-007**: 所有现有测试继续通过（无回归）
+- [X] **SC-001**: HR管理员能够正确补录任意历史日期的休假记录，验证准确率100%
+- [X] **SC-002**: 补录历史休假记录后，员工当前年假余额计算准确率100%
+- [X] **SC-003**: 系统能够在1秒内完成基于任意历史时点的年假余额计算
+- [X] **SC-004**: 用户在补录历史休假时能看到详细的错误提示信息
+- [X] **SC-005**: 删除历史休假记录后，系统能够在2秒内完成余额重新计算
+- [X] **SC-006**: 系统正确处理100%的边界情况（入职前、有效期外、余额不足）
+- [X] **SC-007**: 所有现有测试继续通过（无回归）
