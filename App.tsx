@@ -3,6 +3,7 @@ import { Layout } from './components/Layout';
 import { EmployeeList } from './components/EmployeeList';
 import { EmployeeDetail } from './components/EmployeeDetail';
 import { Settings } from './components/Settings';
+import { CalendarView } from './components/CalendarView';
 import { Employee, LeaveRecord } from './types';
 
 // Simple ID generator
@@ -11,7 +12,7 @@ const generateId = () => Math.random().toString(36).substring(2, 9) + Date.now()
 const App: React.FC = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [records, setRecords] = useState<LeaveRecord[]>([]);
-  const [activeTab, setActiveTab] = useState<'employees' | 'settings'>('employees');
+  const [activeTab, setActiveTab] = useState<'employees' | 'settings' | 'calendar'>('employees');
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<string | null>(null);
   const [showAddEmployeeModal, setShowAddEmployeeModal] = useState(false);
   
@@ -179,6 +180,17 @@ const App: React.FC = () => {
   const renderContent = () => {
     if (activeTab === 'settings') {
       return <Settings employees={employees} records={records} onImport={handleImport} onClear={handleClear} />;
+    }
+
+    if (activeTab === 'calendar') {
+      return (
+        <CalendarView 
+          employees={employees} 
+          records={records} 
+          onAddRecord={handleAddRecord} 
+          onDeleteRecord={handleDeleteRecord} 
+        />
+      );
     }
 
     if (selectedEmployeeId) {

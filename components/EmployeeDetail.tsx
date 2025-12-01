@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Employee, LeaveRecord } from '../types';
 import { calculateLeaveStatus } from '../utils/leaveLogic';
-import { ArrowLeft, Calendar, PlusCircle, Trash2, AlertCircle, Clock, Settings2, AlertTriangle, XCircle } from 'lucide-react';
+import { ArrowLeft, Calendar, PlusCircle, Trash2, AlertCircle, Clock, Settings2, AlertTriangle, XCircle, CheckCircle2, HelpCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface EmployeeDetailProps {
@@ -30,6 +30,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   
   const [newDate, setNewDate] = useState('');
   const [newDays, setNewDays] = useState(1);
+  const [newType, setNewType] = useState<'paid' | 'special'>('paid');
   const [newNote, setNewNote] = useState('');
 
   const [editBaselineDate, setEditBaselineDate] = useState(employee.baselineDate || '');
@@ -44,13 +45,14 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
       employeeId: employee.id,
       date: newDate,
       days: Number(newDays),
-      type: 'paid',
+      type: newType,
       note: newNote
     });
     setShowAddModal(false);
     setNewDate('');
     setNewNote('');
     setNewDays(1);
+    setNewType('paid');
   };
 
   const handleUpdateEmployee = (e: React.FormEvent) => {
@@ -294,9 +296,24 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                                                         <Calendar size={16} />
                                                         计划休假
                                                     </span>
-                                                ) : '带薪年假'
+                                                ) : (
+                                                    <span className="text-teal-600 dark:text-teal-400 flex items-center gap-1">
+                                                        <CheckCircle2 size={16} />
+                                                        带薪年假
+                                                    </span>
+                                                )
                                             )
-                                        ) : '其他假期'}
+                                        ) : record.type === 'special' ? (
+                                            <span className="text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                                                <Calendar size={16} />
+                                                特休
+                                            </span>
+                                        ) : (
+                                            <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                                                <HelpCircle size={16} />
+                                                其他假期
+                                            </span>
+                                        )}
 
                                         {isDeficit ? (
                                             <div className="flex gap-2">
@@ -370,13 +387,29 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                 </select>
               </div>
               <div>
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">类型</label>
+                <select 
+                  value={newType}
+                  onChange={e => setNewType(e.target.value as any)}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-teal-500 dark:text-white transition-all appearance-none"
+                >
+                    <option value="paid">年假</option>
+                    <option value="special">特休</option>
+                </select>
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">备注</label>
                 <textarea 
                   value={newNote}
                   onChange={e => setNewNote(e.target.value)}
-                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-teal-500 dark:text-white transition-all"
+                  required={newType === 'special'}
+                  className={`w-full bg-white dark:bg-slate-900 border rounded-xl px-4 py-2.5 outline-none focus:ring-2 focus:ring-teal-500 dark:text-white transition-all ${
+                    newType === 'special' && !newNote 
+                      ? 'border-rose-300 focus:border-rose-500 focus:ring-rose-200' 
+                      : 'border-slate-300 dark:border-slate-600'
+                  }`}
                   rows={3}
-                  placeholder="例如：私事，看病..."
+                  placeholder={newType === 'special' ? "特休理由 (必填)" : "例如：私事，看病..."}
                 />
               </div>
               <div className="flex gap-3 pt-2">

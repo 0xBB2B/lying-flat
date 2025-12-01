@@ -1,10 +1,10 @@
 import React, { useState } from "react";
-import { Plane, Users, Settings, Moon, Sun, Menu, X } from "lucide-react";
+import { Plane, Users, Settings, Moon, Sun, Menu, X, Calendar } from "lucide-react";
 
 interface LayoutProps {
   children: React.ReactNode;
-  activeTab: "employees" | "settings";
-  setActiveTab: (tab: "employees" | "settings") => void;
+  activeTab: "employees" | "settings" | "calendar";
+  setActiveTab: (tab: "employees" | "settings" | "calendar") => void;
   isDarkMode: boolean;
   toggleTheme: () => void;
 }
@@ -22,7 +22,7 @@ export const Layout: React.FC<LayoutProps> = ({
     setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
-  const handleTabChange = (tab: "employees" | "settings") => {
+  const handleTabChange = (tab: "employees" | "settings" | "calendar") => {
     setActiveTab(tab);
     setIsMobileMenuOpen(false);
   };
@@ -54,6 +54,17 @@ export const Layout: React.FC<LayoutProps> = ({
           >
             <Users size={20} />
             <span>员工管理</span>
+          </button>
+          <button
+            onClick={() => setActiveTab("calendar")}
+            className={`w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl transition-all duration-200 font-medium ${
+              activeTab === "calendar"
+                ? "bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-200"
+            }`}
+          >
+            <Calendar size={20} />
+            <span>日历视图</span>
           </button>
           <button
             onClick={() => setActiveTab("settings")}
@@ -111,6 +122,17 @@ export const Layout: React.FC<LayoutProps> = ({
               <span>员工管理</span>
             </button>
             <button
+              onClick={() => handleTabChange("calendar")}
+              className={`w-full flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-200 font-medium text-lg ${
+                activeTab === "calendar"
+                  ? "bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300"
+                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800"
+              }`}
+            >
+              <Calendar size={24} />
+              <span>日历视图</span>
+            </button>
+            <button
               onClick={() => handleTabChange("settings")}
               className={`w-full flex items-center space-x-3 px-4 py-4 rounded-xl transition-all duration-200 font-medium text-lg ${
                 activeTab === "settings"
@@ -137,7 +159,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <span>首页</span>
             <span className="mx-2">/</span>
             <span className="font-medium text-slate-800 dark:text-slate-200">
-              {activeTab === "employees" ? "员工列表" : "系统设置"}
+              {activeTab === "employees" ? "员工列表" : activeTab === "calendar" ? "日历视图" : "系统设置"}
             </span>
           </div>
 

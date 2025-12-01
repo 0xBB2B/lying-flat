@@ -106,17 +106,21 @@ export const calculateLeaveStatus = (
   // 2. Calculate Usage and Deficit by replaying history
   const validUsage = records
     .filter(r => r.type === 'paid')
-    .filter(r => {
-      // Ignore usage before baseline if baseline exists
-      if (employee.baselineDate && r.date < employee.baselineDate) return false;
-      return true; 
-    })
     .sort((a, b) => a.date.localeCompare(b.date));
 
   const history: ProcessedLeaveRecord[] = [];
   let totalDeficit = 0;
 
   for (const usage of validUsage) {
+    // If usage is before baseline, just add it to history as "historical" (no deficit calc needed)
+    if (employee.baselineDate && usage.date < employee.baselineDate) {
+        history.push({
+            ...usage,
+            deficitDays: 0 // Not counted as deficit, just historical record
+        });
+        continue;
+    }
+
     let amountNeeded = usage.days;
     // totalUsed calculation is handled via active grants logic later for consistency,
     // but we track individual record status here.
