@@ -109,7 +109,7 @@ export const calculateLeaveStatus = (
     .filter(r => {
       // Ignore usage before baseline if baseline exists
       if (employee.baselineDate && r.date < employee.baselineDate) return false;
-      return r.date <= targetDate; 
+      return true; 
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
@@ -147,7 +147,7 @@ export const calculateLeaveStatus = (
 
   // Add non-paid records to history for display, though they don't affect calculation
   const otherRecords = records
-    .filter(r => r.type !== 'paid' && r.date <= targetDate)
+    .filter(r => r.type !== 'paid')
     .map(r => ({ ...r, deficitDays: 0 }));
     
   const fullHistory = [...history, ...otherRecords].sort((a, b) => b.date.localeCompare(a.date));

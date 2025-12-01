@@ -27,7 +27,7 @@ A modern, cyberpunk-themed web application for managing employee leave records, 
 
     ```bash
     git clone <your-repo-url>
-    cd japanleave-pro
+    cd lying-flat
     ```
 
 2.  **Install dependencies:**

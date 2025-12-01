@@ -36,7 +36,7 @@ export const Layout: React.FC<LayoutProps> = ({
             <Plane className="h-6 w-6 text-teal-600 dark:text-teal-400" />
           </div>
           <span className="text-xl font-bold tracking-tight text-slate-800 dark:text-white">
-            JapanLeave
+            Lying Flat
           </span>
         </div>
 
@@ -84,7 +84,7 @@ export const Layout: React.FC<LayoutProps> = ({
         <div className="flex items-center space-x-2">
           <Plane className="h-6 w-6 text-teal-600" />
           <span className="font-bold text-slate-800 dark:text-white">
-            JapanLeave
+            Lying Flat
           </span>
         </div>
         <button

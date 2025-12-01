@@ -253,16 +253,25 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                     // Check if this specific record is a deficit record
                     const isDeficit = record.deficitDays > 0;
                     const isPartial = isDeficit && record.deficitDays < record.days;
+                    const isFuture = new Date(record.date) > new Date();
                     
+                    let containerClass = 'hover:bg-slate-50 dark:hover:bg-slate-700/20';
+                    let dateBoxClass = 'bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300';
+                    
+                    if (isDeficit) {
+                        containerClass = 'bg-red-50/50 dark:bg-red-900/10 hover:bg-red-50 dark:hover:bg-red-900/20';
+                        dateBoxClass = 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800';
+                    } else if (isFuture) {
+                        containerClass = 'bg-indigo-50/50 dark:bg-indigo-900/10 hover:bg-indigo-50 dark:hover:bg-indigo-900/20';
+                        dateBoxClass = 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800';
+                    }
+
                     return (
-                        <div key={record.id} className={`p-5 transition-colors flex justify-between items-center group border-l-4 ${isDeficit ? 'bg-red-50/50 dark:bg-red-900/10 border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-700/20'}`}>
+                        <div key={record.id} className={`p-5 transition-colors flex justify-between items-center group ${containerClass}`}>
                             <div className="flex gap-5 items-center">
-                                <div className={`px-4 py-2.5 rounded-lg font-mono text-sm flex flex-col items-center justify-center w-28 shadow-sm ${
-                                    isDeficit 
-                                        ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' 
-                                        : 'bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300'
-                                }`}>
+                                <div className={`px-4 py-2.5 rounded-lg font-mono text-sm flex flex-col items-center justify-center w-28 shadow-sm whitespace-nowrap ${dateBoxClass}`}>
                                     <span className="font-bold">{record.date}</span>
+                                    {isFuture && <span className="text-[10px] opacity-80 font-normal mt-0.5">计划中</span>}
                                 </div>
                                 <div>
                                     <div className="font-bold text-slate-700 dark:text-slate-200 text-lg flex items-center flex-wrap gap-2">
@@ -279,7 +288,14 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                                                         </span>
                                                     )}
                                                 </>
-                                            ) : '带薪年假'
+                                            ) : (
+                                                isFuture ? (
+                                                    <span className="text-indigo-600 dark:text-indigo-400 flex items-center gap-1">
+                                                        <Calendar size={16} />
+                                                        计划休假
+                                                    </span>
+                                                ) : '带薪年假'
+                                            )
                                         ) : '其他假期'}
 
                                         {isDeficit ? (
@@ -294,7 +310,13 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                                                  )}
                                             </div>
                                         ) : (
-                                            <span className="bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 text-xs px-2.5 py-0.5 rounded-full font-medium">{record.days} 天</span>
+                                            <span className={`border text-xs px-2.5 py-0.5 rounded-full font-medium ${
+                                                isFuture 
+                                                ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-100 dark:border-indigo-800 text-indigo-700 dark:text-indigo-400'
+                                                : 'bg-teal-50 dark:bg-teal-900/30 border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400'
+                                            }`}>
+                                                {record.days} 天
+                                            </span>
                                         )}
                                     </div>
                                     {record.note ? (
