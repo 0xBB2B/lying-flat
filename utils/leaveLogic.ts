@@ -1,4 +1,4 @@
-import { Employee, LeaveRecord, GrantRecord, LeaveStatus, JAPAN_LEAVE_SCHEDULE } from '../types';
+import { Employee, LeaveRecord, GrantRecord, LeaveStatus, JAPAN_LEAVE_SCHEDULE, GrantStatus, ProcessedLeaveRecord } from '../types';
 
 // Helper to add months to a date
 const addMonths = (date: Date, months: number): Date => {
@@ -21,39 +21,24 @@ export const calculateLeaveStatus = (
 ): LeaveStatus => {
   const hireDate = new Date(employee.hireDate);
   const checkDate = new Date(targetDate);
-  const grants: GrantRecord[] = [];
+  const allGrants: GrantStatus[] = [];
 
-  // 1. Calculate Statutory Grants based on Hire Date
-  // In Japan, leave expires 2 years after it is granted.
-  
-  // If baseline is set, we ignore statutory grants before the baseline date
-  // and treat the baseline as a "grant" on that date (expiring in 2 years usually, 
-  // but for safety/flexibility we assume standard 2 year expiry from baseline date for simplicity, 
-  // or user should set baseline date to the oldest valid grant date).
-  // Standard practice for migration: The 'baseline' represents the pool of valid days at that moment.
+  // 1. Calculate ALL Statutory Grants (Historical & Active)
   
   const baselineDateObj = employee.baselineDate ? new Date(employee.baselineDate) : null;
 
   if (employee.baselineDate && employee.baselineDays !== undefined) {
-    grants.push({
+    allGrants.push({
       date: employee.baselineDate,
       days: employee.baselineDays,
+      remaining: employee.baselineDays, // Initialize remaining
       isBaseline: true,
       expiryDate: addYears(new Date(employee.baselineDate), 2).toISOString().split('T')[0]
     });
   }
 
-  // Iterate through the schedule to find all grants that have occurred up to checkDate
-  // We go up to 20 years just to be safe
+  // Iterate to find grants up to checkDate
   for (let year = 0; year < 40; year++) {
-    // 6 months (0.5), 1.5, 2.5 ...
-    // The schedule logic:
-    // 0.5 year mark -> 10 days
-    // 1.5 year mark -> 11 days
-    // ...
-    // 6.5 year mark -> 20 days
-    // 7.5 year mark -> 20 days...
-    
     let grantDate: Date;
     let days: number;
 
@@ -62,61 +47,52 @@ export const calculateLeaveStatus = (
       days = 10;
     } else {
       grantDate = addMonths(hireDate, 6 + (year * 12));
-      // Determine days based on years of service
       if (year <= 5) {
-         // indices in JAPAN_LEAVE_SCHEDULE: 0 is 0.5yr. 1 is 1.5yr.
-         // year 1 (1.5yr) matches index 1.
          days = JAPAN_LEAVE_SCHEDULE[year]?.days || 20;
       } else {
          days = 20;
       }
     }
 
-    // Stop generating if future
     if (grantDate > checkDate) break;
 
-    // Logic: If we have a baseline, skip any statutory grant that happened BEFORE or ON the baseline date.
-    // The baseline supersedes history.
+    // Skip if covered by baseline
     if (baselineDateObj && grantDate <= baselineDateObj) {
       continue;
     }
 
-    grants.push({
+    allGrants.push({
       date: grantDate.toISOString().split('T')[0],
       days: days,
+      remaining: days, // Initialize remaining
       isBaseline: false,
       expiryDate: addYears(grantDate, 2).toISOString().split('T')[0]
     });
   }
 
-  // 2. Filter out grants that have already expired relative to checkDate
-  const activeGrants = grants.filter(g => g.expiryDate > targetDate).sort((a, b) => a.date.localeCompare(b.date));
+  // Sort grants by date
+  allGrants.sort((a, b) => a.date.localeCompare(b.date));
 
-  // 3. Calculate usage
-  // Usage logic: Leave is deducted from the oldest valid grant first (FIFO).
-  // We only count usage that happened AFTER the baseline date (if exists), because baseline assumes usage prior was accounted for.
-  // BUT, we must also consider the validity window.
-  
+  // 2. Calculate Usage and Deficit by replaying history
   const validUsage = records
     .filter(r => r.type === 'paid')
     .filter(r => {
-      // If baseline exists, only count usage after baseline date
+      // Ignore usage before baseline if baseline exists
       if (employee.baselineDate && r.date < employee.baselineDate) return false;
       return r.date <= targetDate; 
     })
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  let totalUsed = 0;
-  let remainingGrants = activeGrants.map(g => ({ ...g, remaining: g.days }));
+  const history: ProcessedLeaveRecord[] = [];
+  let totalDeficit = 0;
 
-  // Simulate consumption
   for (const usage of validUsage) {
     let amountNeeded = usage.days;
-    totalUsed += amountNeeded;
+    // totalUsed calculation is handled via active grants logic later for consistency,
+    // but we track individual record status here.
 
-    // Find oldest grant that is valid at the time of usage
-    // Note: The usage date must be < grant.expiryDate AND usage date >= grant.date
-    for (const grant of remainingGrants) {
+    // Try to deduct from grants that were valid AT THE TIME OF USAGE
+    for (const grant of allGrants) {
       if (amountNeeded <= 0) break;
       
       const isValidForUsage = usage.date >= grant.date && usage.date < grant.expiryDate;
@@ -127,15 +103,39 @@ export const calculateLeaveStatus = (
         amountNeeded -= deduct;
       }
     }
-    // If amountNeeded > 0 here, it means they took leave without having balance (Negative balance / Unpaid implicit)
+    
+    // The remaining amountNeeded is the deficit for this specific record
+    history.push({
+      ...usage,
+      deficitDays: amountNeeded
+    });
+
+    if (amountNeeded > 0) {
+      totalDeficit += amountNeeded;
+    }
   }
 
-  const totalRemaining = remainingGrants.reduce((sum, g) => sum + g.remaining, 0);
+  // Add non-paid records to history for display, though they don't affect calculation
+  const otherRecords = records
+    .filter(r => r.type !== 'paid' && r.date <= targetDate)
+    .map(r => ({ ...r, deficitDays: 0 }));
+    
+  const fullHistory = [...history, ...otherRecords].sort((a, b) => b.date.localeCompare(a.date));
+
+  // 3. Determine Final Status for UI (Active Grants Only)
+  // We filter for grants that are STILL active as of targetDate
+  const activeGrants = allGrants.filter(g => g.expiryDate > targetDate);
+  const totalRemaining = activeGrants.reduce((sum, g) => sum + g.remaining, 0);
+  const totalActiveGranted = activeGrants.reduce((sum, g) => sum + g.days, 0);
+
+  const usedFromActive = totalActiveGranted - totalRemaining;
 
   return {
-    totalGranted: activeGrants.reduce((sum, g) => sum + g.days, 0),
-    totalUsed: totalUsed,
-    remaining: totalRemaining, // Can be negative if logic allowed, but usually floors at 0 or shows deficit
-    grants: remainingGrants
+    totalGranted: totalActiveGranted,
+    totalUsed: usedFromActive, 
+    remaining: totalRemaining,
+    deficit: totalDeficit,
+    grants: activeGrants,
+    history: fullHistory
   };
 };

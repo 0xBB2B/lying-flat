@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Employee, LeaveRecord } from '../types';
 import { calculateLeaveStatus } from '../utils/leaveLogic';
-import { ArrowLeft, Calendar, PlusCircle, Trash2, AlertCircle, Clock, Settings2 } from 'lucide-react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
+import { ArrowLeft, Calendar, PlusCircle, Trash2, AlertCircle, Clock, Settings2, AlertTriangle, XCircle } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip as RechartsTooltip, Legend } from 'recharts';
 
 interface EmployeeDetailProps {
   employee: Employee;
@@ -35,6 +35,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
   const [editBaselineDate, setEditBaselineDate] = useState(employee.baselineDate || '');
   const [editBaselineDays, setEditBaselineDays] = useState(employee.baselineDays?.toString() || '');
 
+  // We use the stats.history for rendering the list now, as it contains deficit info
   const stats = useMemo(() => calculateLeaveStatus(employee, records), [employee, records]);
 
   const handleAddRecord = (e: React.FormEvent) => {
@@ -62,15 +63,16 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
     setShowEditModal(false);
   };
 
+  // Calculate Net Balance (Remaining - Deficit)
+  const netBalance = stats.remaining - stats.deficit;
+  const isNegative = netBalance < 0;
+
+  // Chart Data Construction
   const chartData = [
-    { name: '剩余', value: Math.max(0, stats.remaining) },
-    { name: '已用', value: stats.totalUsed },
-  ];
-  
-  // Dynamic colors for dark/light mode
-  const COLORS = isDarkMode 
-    ? ['#2dd4bf', '#334155'] // Teal-400 / Slate-700
-    : ['#0f766e', '#cbd5e1']; // Teal-700 / Slate-300
+    { name: '剩余 (可用)', value: stats.remaining, color: isDarkMode ? '#2dd4bf' : '#0f766e' }, // Teal
+    { name: '已用 (带薪)', value: stats.totalUsed, color: isDarkMode ? '#475569' : '#cbd5e1' }, // Slate
+    { name: '欠薪 (扣款)', value: stats.deficit, color: isDarkMode ? '#f87171' : '#ef4444' },   // Red
+  ].filter(d => d.value > 0);
 
   return (
     <div className="space-y-6 animate-fade-in pb-10">
@@ -107,19 +109,34 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
         </div>
       </div>
 
+      {/* Alert for Salary Deduction */}
+      {isNegative && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-2xl flex items-start gap-3 animate-fade-in">
+           <AlertTriangle className="text-red-600 dark:text-red-400 mt-1 flex-shrink-0" size={24} />
+           <div>
+             <h4 className="font-bold text-red-800 dark:text-red-300">假期余额不足</h4>
+             <p className="text-red-700 dark:text-red-400 text-sm mt-1">
+               当前剩余假期为负数（{netBalance} 天）。超出的部分属于无薪缺勤，需要进行工资扣除处理。
+             </p>
+           </div>
+        </div>
+      )}
+
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Main Balance */}
         <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col justify-between relative overflow-hidden">
           <div className="absolute top-0 right-0 p-4 opacity-10">
-              <Clock size={100} className="text-teal-600 dark:text-teal-400" />
+              <Clock size={100} className={isNegative ? 'text-red-600' : 'text-teal-600 dark:text-teal-400'} />
           </div>
           <div>
             <h3 className="text-slate-500 dark:text-slate-400 font-semibold text-xs uppercase tracking-wider">当前剩余年假</h3>
-            <div className={`text-5xl font-extrabold mt-4 tracking-tight ${stats.remaining < 0 ? 'text-red-500' : 'text-teal-600 dark:text-teal-400'}`}>
-              {stats.remaining} <span className="text-xl text-slate-400 dark:text-slate-500 font-medium">天</span>
+            <div className={`text-5xl font-extrabold mt-4 tracking-tight ${isNegative ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400'}`}>
+              {netBalance} <span className="text-xl text-slate-400 dark:text-slate-500 font-medium">天</span>
             </div>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">有效期内的可用余额</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-2">
+                {isNegative ? '包含超额预支/欠薪天数' : '有效期内的可用余额'}
+            </p>
           </div>
           <div className="mt-6 h-40 -ml-4">
              <ResponsiveContainer width="100%" height="100%">
@@ -135,9 +152,16 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                     stroke="none"
                   >
                     {chartData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
                   </Pie>
+                  <Legend 
+                    layout="vertical" 
+                    verticalAlign="middle" 
+                    align="right"
+                    wrapperStyle={{ fontSize: '10px', right: 0 }}
+                    formatter={(value, entry: any) => <span style={{ color: isDarkMode ? '#e2e8f0' : '#334155' }}>{value}</span>}
+                  />
                   <RechartsTooltip 
                     contentStyle={{ 
                         backgroundColor: isDarkMode ? '#1e293b' : '#fff', 
@@ -145,6 +169,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                         borderRadius: '8px',
                         color: isDarkMode ? '#fff' : '#0f172a'
                     }} 
+                    itemStyle={{ color: isDarkMode ? '#e2e8f0' : '#0f172a' }}
                   />
                 </PieChart>
              </ResponsiveContainer>
@@ -159,7 +184,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
           </div>
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-sm text-left">
-              <thead className="text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-700/50 uppercase font-semibold">
+              <thead className="text-xs text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700/50 uppercase font-semibold">
                 <tr>
                   <th className="px-6 py-3">授予日期</th>
                   <th className="px-6 py-3">过期日期</th>
@@ -216,7 +241,7 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
         </div>
         
         <div className="divide-y divide-slate-100 dark:divide-slate-700">
-            {records.length === 0 ? (
+            {stats.history.length === 0 ? (
                 <div className="p-12 text-center flex flex-col items-center justify-center">
                     <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-full mb-3">
                         <Calendar size={24} className="text-slate-300 dark:text-slate-500" />
@@ -224,33 +249,71 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                     <span className="text-slate-400 dark:text-slate-500">该员工暂无休假记录</span>
                 </div>
             ) : (
-                records.sort((a,b) => b.date.localeCompare(a.date)).map(record => (
-                    <div key={record.id} className="p-5 hover:bg-slate-50 dark:hover:bg-slate-700/20 transition-colors flex justify-between items-center group">
-                        <div className="flex gap-5 items-center">
-                            <div className="bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 px-4 py-2.5 rounded-lg text-slate-700 dark:text-slate-300 font-mono text-sm flex flex-col items-center justify-center w-28 shadow-sm">
-                                <span className="font-bold">{record.date}</span>
-                            </div>
-                            <div>
-                                <div className="font-bold text-slate-700 dark:text-slate-200 text-lg flex items-center">
-                                    {record.type === 'paid' ? '带薪年假' : '其他假期'}
-                                    <span className="ml-3 bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 text-xs px-2.5 py-0.5 rounded-full font-medium">{record.days} 天</span>
+                stats.history.map(record => {
+                    // Check if this specific record is a deficit record
+                    const isDeficit = record.deficitDays > 0;
+                    const isPartial = isDeficit && record.deficitDays < record.days;
+                    
+                    return (
+                        <div key={record.id} className={`p-5 transition-colors flex justify-between items-center group border-l-4 ${isDeficit ? 'bg-red-50/50 dark:bg-red-900/10 border-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' : 'border-transparent hover:bg-slate-50 dark:hover:bg-slate-700/20'}`}>
+                            <div className="flex gap-5 items-center">
+                                <div className={`px-4 py-2.5 rounded-lg font-mono text-sm flex flex-col items-center justify-center w-28 shadow-sm ${
+                                    isDeficit 
+                                        ? 'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800' 
+                                        : 'bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-300'
+                                }`}>
+                                    <span className="font-bold">{record.date}</span>
                                 </div>
-                                {record.note ? (
-                                    <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">{record.note}</div>
-                                ) : (
-                                    <div className="text-sm text-slate-400 dark:text-slate-600 italic mt-1">无备注</div>
-                                )}
+                                <div>
+                                    <div className="font-bold text-slate-700 dark:text-slate-200 text-lg flex items-center flex-wrap gap-2">
+                                        {record.type === 'paid' ? (
+                                            isDeficit ? (
+                                                <>
+                                                    <span className="text-red-600 dark:text-red-400 flex items-center gap-1">
+                                                        <XCircle size={16} />
+                                                        工资扣除
+                                                    </span>
+                                                    {isPartial && (
+                                                        <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
+                                                            (申请 {record.days} 天, 余额不足)
+                                                        </span>
+                                                    )}
+                                                </>
+                                            ) : '带薪年假'
+                                        ) : '其他假期'}
+
+                                        {isDeficit ? (
+                                            <div className="flex gap-2">
+                                                 <span className="bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-xs px-2.5 py-0.5 rounded-full font-medium">
+                                                    -{record.deficitDays} 天 (扣款)
+                                                 </span>
+                                                 {isPartial && (
+                                                     <span className="bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 text-xs px-2.5 py-0.5 rounded-full font-medium">
+                                                        {record.days - record.deficitDays} 天 (带薪)
+                                                     </span>
+                                                 )}
+                                            </div>
+                                        ) : (
+                                            <span className="bg-teal-50 dark:bg-teal-900/30 border border-teal-100 dark:border-teal-800 text-teal-700 dark:text-teal-400 text-xs px-2.5 py-0.5 rounded-full font-medium">{record.days} 天</span>
+                                        )}
+                                    </div>
+                                    {record.note ? (
+                                        <div className="text-sm text-slate-500 dark:text-slate-400 mt-1">{record.note}</div>
+                                    ) : (
+                                        <div className="text-sm text-slate-400 dark:text-slate-600 italic mt-1">无备注</div>
+                                    )}
+                                </div>
                             </div>
+                            <button 
+                                onClick={() => onDeleteRecord(record.id)}
+                                className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 transition-colors opacity-0 group-hover:opacity-100"
+                                title="删除记录"
+                            >
+                                <Trash2 size={18} />
+                            </button>
                         </div>
-                        <button 
-                            onClick={() => onDeleteRecord(record.id)}
-                            className="text-slate-300 dark:text-slate-600 hover:text-red-500 dark:hover:text-red-400 p-2 transition-colors opacity-0 group-hover:opacity-100"
-                            title="删除记录"
-                        >
-                            <Trash2 size={18} />
-                        </button>
-                    </div>
-                ))
+                    );
+                })
             )}
         </div>
       </div>

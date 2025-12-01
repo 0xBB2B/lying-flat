@@ -18,6 +18,10 @@ export interface LeaveRecord {
   note?: string;
 }
 
+export interface ProcessedLeaveRecord extends LeaveRecord {
+  deficitDays: number; // How many days of this record were NOT covered by grants
+}
+
 export interface GrantRecord {
   date: string;
   days: number;
@@ -32,8 +36,10 @@ export interface GrantStatus extends GrantRecord {
 export interface LeaveStatus {
   totalGranted: number; // Total valid grants currently active
   totalUsed: number;    // Total used from active grants
-  remaining: number;    // The bottom line
+  remaining: number;    // The bottom line (available from active grants)
+  deficit: number;      // Days taken but not covered (unpaid/salary deduction)
   grants: GrantStatus[]; // Detail of active grants
+  history: ProcessedLeaveRecord[]; // Processed history with deficit status
 }
 
 export const JAPAN_LEAVE_SCHEDULE = [
