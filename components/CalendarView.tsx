@@ -58,6 +58,16 @@ export const CalendarView: React.FC<CalendarViewProps> = ({
     e.preventDefault();
     if (!selectedEmployeeId || !selectedDate) return;
 
+    // Check if total leave for this employee on this day exceeds 1
+    const existingDays = records
+      .filter(r => r.date === selectedDate && r.employeeId === selectedEmployeeId)
+      .reduce((sum, r) => sum + r.days, 0);
+
+    if (existingDays + Number(days) > 1) {
+      alert(`该员工在 ${selectedDate} 已有 ${existingDays} 天休假记录。单日休假总和不能超过 1 天。`);
+      return;
+    }
+
     onAddRecord({
       employeeId: selectedEmployeeId,
       date: selectedDate,

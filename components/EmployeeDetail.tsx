@@ -41,6 +41,17 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
 
   const handleAddRecord = (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Check if total leave for this day exceeds 1
+    const existingDays = records
+      .filter(r => r.date === newDate)
+      .reduce((sum, r) => sum + r.days, 0);
+
+    if (existingDays + Number(newDays) > 1) {
+      alert(`该日期 (${newDate}) 已有 ${existingDays} 天休假记录。单日休假总和不能超过 1 天。`);
+      return;
+    }
+
     onAddRecord({
       employeeId: employee.id,
       date: newDate,
