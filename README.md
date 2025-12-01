@@ -1,11 +1,14 @@
-# Japan Leave Management System
+# Lying Flat
 
-A modern, cyberpunk-themed web application for managing employee leave records, specifically tailored for Japanese labor laws. Built with React, Vite, and Tailwind CSS.
+A professional leave management system compliant with Japanese Labor Standards Act. Tracks annual paid leave (Yukyu), calculates remaining balances based on hire dates, and supports historical data migration. Built with React, Vite, and Tailwind CSS.
 
 ## Features
 
 - **Employee Management**: Add, update, and remove employee records.
 - **Leave Tracking**: Track leave usage and history for each employee.
+- **Advanced Leave Tracking**: Tracks deficit (negative balance) and historical usage.
+- **Visual Distinctions**: Clear visual indicators for future planned leave vs. past leave.
+- **Baseline Management**: Ability to set and clear baseline leave balances.
 - **Automated Calculation**: Automatically calculates annual leave entitlement based on hire date (Japanese Labor Standards).
 - **Dark Mode**: Fully supported dark mode with a sleek cyberpunk aesthetic.
 - **Data Persistence**: All data is saved locally in the browser (LocalStorage).
