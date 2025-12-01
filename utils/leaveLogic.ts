@@ -25,17 +25,8 @@ export const calculateLeaveStatus = (
 
   // 1. Calculate ALL Statutory Grants (Historical & Active)
   
+  const hasBaseline = !!(employee.baselineDate && employee.baselineDays !== undefined);
   const baselineDateObj = employee.baselineDate ? new Date(employee.baselineDate) : null;
-
-  if (employee.baselineDate && employee.baselineDays !== undefined) {
-    allGrants.push({
-      date: employee.baselineDate,
-      days: employee.baselineDays,
-      remaining: employee.baselineDays, // Initialize remaining
-      isBaseline: true,
-      expiryDate: addYears(new Date(employee.baselineDate), 2).toISOString().split('T')[0]
-    });
-  }
 
   // Iterate to find grants up to checkDate
   for (let year = 0; year < 40; year++) {
@@ -56,11 +47,6 @@ export const calculateLeaveStatus = (
 
     if (grantDate > checkDate) break;
 
-    // Skip if covered by baseline
-    if (baselineDateObj && grantDate <= baselineDateObj) {
-      continue;
-    }
-
     allGrants.push({
       date: grantDate.toISOString().split('T')[0],
       days: days,
@@ -68,6 +54,50 @@ export const calculateLeaveStatus = (
       isBaseline: false,
       expiryDate: addYears(grantDate, 2).toISOString().split('T')[0]
     });
+  }
+
+  // Apply Baseline Logic: Distribute baselineDays into historical grants
+  if (hasBaseline && baselineDateObj && employee.baselineDays !== undefined) {
+    let remainingBaseline = employee.baselineDays;
+    
+    // Sort grants by date descending to prioritize most recent grants (LIFO for remaining balance)
+    // We want to fill the "remaining" bucket of the most recent valid grants first
+    const grantsToCheck = [...allGrants].sort((a, b) => b.date.localeCompare(a.date));
+
+    for (const grant of grantsToCheck) {
+      const grantDate = new Date(grant.date);
+      const expiryDate = new Date(grant.expiryDate);
+
+      // Check if this grant was active on the baseline date
+      if (grantDate <= baselineDateObj && baselineDateObj < expiryDate) {
+        if (remainingBaseline > 0) {
+          // This grant contributes to the baseline
+          const amountToKeep = Math.min(grant.days, remainingBaseline);
+          grant.remaining = amountToKeep;
+          remainingBaseline -= amountToKeep;
+        } else {
+          // This grant is older than the baseline balance covers, so it's effectively used up
+          grant.remaining = 0;
+        }
+      } else if (grantDate > baselineDateObj) {
+        // Grants after baseline date are untouched (they are new accruals)
+        continue;
+      } else {
+        // Grants expired before baseline date should be 0
+        grant.remaining = 0;
+      }
+    }
+
+    // If there is still baseline remaining (overflow), create a carryover grant
+    if (remainingBaseline > 0) {
+       allGrants.push({
+        date: employee.baselineDate!,
+        days: remainingBaseline, // Just the overflow amount
+        remaining: remainingBaseline,
+        isBaseline: true,
+        expiryDate: addYears(new Date(employee.baselineDate!), 2).toISOString().split('T')[0]
+      });
+    }
   }
 
   // Sort grants by date

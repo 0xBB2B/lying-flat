@@ -402,8 +402,19 @@ export const EmployeeDetail: React.FC<EmployeeDetailProps> = ({
                 />
               </div>
               <div className="flex gap-3 pt-2">
-                <button type="button" onClick={() => setShowEditModal(false)} className="flex-1 px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">取消</button>
-                <button type="submit" className="flex-1 px-4 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 font-medium transition-colors shadow-lg shadow-teal-600/20">保存设置</button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setEditBaselineDate('');
+                    setEditBaselineDays('');
+                  }} 
+                  className="px-4 py-2.5 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 font-medium transition-colors"
+                >
+                  清空基准
+                </button>
+                <div className="flex-1"></div>
+                <button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2.5 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700 font-medium transition-colors">取消</button>
+                <button type="submit" className="px-6 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-700 font-medium transition-colors shadow-lg shadow-teal-600/20">保存设置</button>
               </div>
             </form>
           </div>
